@@ -323,7 +323,7 @@ class AreaDetectorTimeseriesCollector:
         for v,t in zip(payload_val, payload_time):
             ev = {'data': {self._name: v},
                   'timestamps': {self._name: t},
-                  'time': ttime.time()}
+                  'time': t}
             yield ev
 
     def stop(self):
