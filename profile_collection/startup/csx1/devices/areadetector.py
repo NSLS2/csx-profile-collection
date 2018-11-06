@@ -158,6 +158,15 @@ class ProductionCamStandard(SingleTrigger, ProductionCamBase):
     def resume(self):
         set_val = 1
         self.hdf5.capture.put(set_val)
+        # The AD HDF5 plugin bumps its file_number and starts writing into a
+        # *new file* because we toggled capturing off and on again.
+        # Generate a new Resource document for the new file.
+        self.hdf5._fn = self.hdf5.file_template.get() % (read_path,
+                                               filename,
+                                               self.hdf5.file_number.get() - 1)
+                                               # file_number is *next* iteration
+        res_kwargs = {'frame_per_point': self.get_frames_per_point()}
+        self.hdf5._generate_resource(res_kwargs)
         # can add this if we're not confident about setting...
         #val = self.hdf5.capture.get()
         #print("resuming FCCD")
