@@ -80,7 +80,7 @@ fccd = StageOnFirstTrigger('XF:23ID1-ES{FCCD}',
                               name='fccd')
 fccd.read_attrs = ['hdf5','mcs.wfrm']
 fccd.hdf5.read_attrs = []
-fccd.hdf5._reg = db.reg
+#fccd.hdf5._reg = db.reg
 fccd.configuration_attrs = ['cam.acquire_time',
                             'cam.acquire_period',
                             'cam.image_mode',
