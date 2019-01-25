@@ -5,6 +5,19 @@ from nslsii.detectors.xspress3 import (XspressTrigger,
                                        Xspress3ROI)
 from ophyd.areadetector.plugins import PluginBase
 
+
+class Xspress3FileStoreFix(Xspress3FileStore):
+
+    def stage(self):
+        # self._resource_uid is None from Xspress3FileStore, becuase
+        # in Xspress3FileStore self.stage() method, self._resource is Used
+        # instead of self._resource_uid. This is because hxntools
+        # uses name like self._resourceself.
+        # upstream fix is expected in nslsii, this is only quick fix now.
+        ret = super().stage()
+        self._resouce_uid = self._resource
+
+
 class CSXXspress3Detector(XspressTrigger, Xspress3Detector):
     roi_data = Cpt(PluginBase, 'ROIDATA:')
     channel1 = Cpt(Xspress3Channel,
@@ -13,7 +26,7 @@ class CSXXspress3Detector(XspressTrigger, Xspress3Detector):
     # arrsum = Cpt(Xspress3Detector, 'ARRSUM1:ArrayData', read_attrs=[], configuration_attrs=[])
     # arr1 =Cpt(Xspress3Detector, 'ARR1:ArrayData', read_attrs=[], configuration_attrs=[])
 
-    hdf5 = Cpt(Xspress3FileStore, 'HDF5:',
+    hdf5 = Cpt(Xspress3FileStoreFix, 'HDF5:',
                write_path_template='/GPFS/xf23id/xf23id1/xspress3_data/%Y/%m/%d/',
                root='/GPFS/xf23id/xf23id1/',
                reg=db.reg)
@@ -66,6 +79,3 @@ def get_range(elm):
     elm_map = {'Fe': [70, 72],
                'Ni': [84, 86]}
     return elm_map[elm]
-
-
-
