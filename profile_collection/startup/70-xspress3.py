@@ -15,7 +15,8 @@ class Xspress3FileStoreFix(Xspress3FileStore):
         # uses name like self._resourceself.
         # upstream fix is expected in nslsii, this is only quick fix now.
         ret = super().stage()
-        self._resouce_uid = self._resource
+        self._resource_uid = self._resource
+        return ret
 
 
 class CSXXspress3Detector(XspressTrigger, Xspress3Detector):
