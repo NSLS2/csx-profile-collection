@@ -18,9 +18,8 @@ class CSXXspress3Detector(XspressTrigger, Xspress3Detector):
                root='/GPFS/xf23id/xf23id1/',
                reg=db.reg)
 
-    def __init__(self, prefix, *, num_images=1, configuration_attrs=None, read_attrs=None,
+    def __init__(self, prefix, *, configuration_attrs=None, read_attrs=None,
                  **kwargs):
-        self.num_images = num_images
         if configuration_attrs is None:
             configuration_attrs = ['external_trig', 'total_points',
                                    'spectra_per_point', 'settings',
@@ -29,10 +28,6 @@ class CSXXspress3Detector(XspressTrigger, Xspress3Detector):
             read_attrs = ['channel1', 'hdf5']
         super().__init__(prefix, configuration_attrs=configuration_attrs,
                          read_attrs=read_attrs, **kwargs)
-
-    def stage(self):
-        super().stage()
-        self.settings.num_images.put(self.num_images)
 
     @property
     def hints(self):
@@ -66,6 +61,3 @@ def get_range(elm):
     elm_map = {'Fe': [70, 72],
                'Ni': [84, 86]}
     return elm_map[elm]
-
-
-
