@@ -1,4 +1,4 @@
-from nslsii.detectors.xspress3 import (XspressTrigger,
+from hxntools.detectors.xspress3 import (XspressTrigger,
                                        Xspress3Detector,
                                        Xspress3FileStore,
                                        Xspress3Channel,
@@ -27,7 +27,7 @@ class CSXXspress3Detector(XspressTrigger, Xspress3Detector):
     # arrsum = Cpt(Xspress3Detector, 'ARRSUM1:ArrayData', read_attrs=[], configuration_attrs=[])
     # arr1 =Cpt(Xspress3Detector, 'ARR1:ArrayData', read_attrs=[], configuration_attrs=[])
 
-    hdf5 = Cpt(Xspress3FileStoreFix, 'HDF5:',
+    hdf5 = Cpt(Xspress3FileStore, 'HDF5:',
                write_path_template='/GPFS/xf23id/xf23id1/xspress3_data/%Y/%m/%d/',
                root='/GPFS/xf23id/xf23id1/',
                reg=db.reg)
@@ -47,6 +47,10 @@ class CSXXspress3Detector(XspressTrigger, Xspress3Detector):
     def stage(self):
         super().stage()
         self.settings.num_images.put(self.num_images)
+
+    def unstage(self):
+        self.hdf5.capture.put(0)
+        super().unstage()
 
     @property
     def hints(self):
