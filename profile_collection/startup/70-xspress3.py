@@ -6,6 +6,15 @@ from hxntools.detectors.xspress3 import (XspressTrigger,
 from ophyd.areadetector.plugins import PluginBase
 
 
+def ct_xsp3(dets, num=1, **kwargs):
+    """ Assign num to total_points.
+    """
+    for d in dets:
+        if hasattr(d, 'total_points'):
+            yield from bps.mov(d.total_points, num)
+    return (yield from ct(dets, num=num, **kwargs))
+
+
 class Xspress3FileStoreFix(Xspress3FileStore):
 
     def stage(self):
@@ -29,8 +38,7 @@ class CSXXspress3Detector(XspressTrigger, Xspress3Detector):
 
     hdf5 = Cpt(Xspress3FileStore, 'HDF5:',
                write_path_template='/GPFS/xf23id/xf23id1/xspress3_data/%Y/%m/%d/',
-               root='/GPFS/xf23id/xf23id1/',
-               reg=db.reg)
+               root='/GPFS/xf23id/xf23id1/')
 
     def __init__(self, prefix, *, num_images=1, configuration_attrs=None, read_attrs=None,
                  **kwargs):
@@ -49,7 +57,7 @@ class CSXXspress3Detector(XspressTrigger, Xspress3Detector):
         self.settings.num_images.put(self.num_images)
 
     def unstage(self):
-        self.hdf5.capture.put(0)
+        #self.hdf5.capture.put(0)
         super().unstage()
 
     @property
