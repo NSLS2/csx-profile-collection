@@ -10,8 +10,9 @@ def ct_xsp3(dets, num=1, **kwargs):
     """ Assign num to total_points.
     """
     for d in dets:
-        if hasattr(d, 'total_points'):
-            yield from bps.mov(d.total_points, num)
+        if d.name == 'xsp3':
+            if hasattr(d, 'total_points'):
+                yield from bps.mov(d.total_points, num)
     return (yield from ct(dets, num=num, **kwargs))
 
 
@@ -40,7 +41,7 @@ class CSXXspress3Detector(XspressTrigger, Xspress3Detector):
                write_path_template='/GPFS/xf23id/xf23id1/xspress3_data/%Y/%m/%d/',
                root='/GPFS/xf23id/xf23id1/')
 
-    def __init__(self, prefix, *, num_images=1, configuration_attrs=None, read_attrs=None,
+    def __init__(self, prefix, *, num_images=2, configuration_attrs=None, read_attrs=None,
                  **kwargs):
         self.num_images = num_images
         if configuration_attrs is None:
