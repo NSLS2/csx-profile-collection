@@ -60,6 +60,11 @@ class HDF5PluginWithFileStore(HDF5PluginSWMR, FileStoreHDF5IterativeWrite):
     def get_frames_per_point(self):
         return self.parent.cam.num_images.get()
 
+    def make_filename(self):
+        # stash this so that it is available on resume
+        self._ret = super().make_filename()
+        return self._ret
+
 class FCCDCam(AreaDetectorCam):
     sdk_version = Cpt(EpicsSignalRO, 'SDKVersion_RBV')
     firmware_version = Cpt(EpicsSignalRO, 'FirmwareVersion_RBV')
@@ -158,6 +163,18 @@ class ProductionCamStandard(SingleTrigger, ProductionCamBase):
     def resume(self):
         set_val = 1
         self.hdf5.capture.put(set_val)
+        # The AD HDF5 plugin bumps its file_number and starts writing into a
+        # *new file* because we toggled capturing off and on again.
+        # Generate a new Resource document for the new file.
+
+        # grab the stashed result from make_filename
+        filename, read_path, write_path = self.hdf5._ret
+        self.hdf5._fn = self.hdf5.file_template.get() % (read_path,
+                                               filename,
+                                               self.hdf5.file_number.get() - 1)
+                                               # file_number is *next* iteration
+        res_kwargs = {'frame_per_point': self.hdf5.get_frames_per_point()}
+        self.hdf5._generate_resource(res_kwargs)
         # can add this if we're not confident about setting...
         #val = self.hdf5.capture.get()
         #print("resuming FCCD")
