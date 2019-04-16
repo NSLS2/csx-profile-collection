@@ -1,5 +1,7 @@
 from ophyd import Component as Cpt
 from ophyd import (PseudoSingle, EpicsMotor, SoftPositioner, Signal)
+import gi
+gi.require_version('Hkl', '5.0')
 from hkl.diffract import E6C  #this works for mu=0
 from ophyd.pseudopos import (pseudo_position_argument, real_position_argument)
 

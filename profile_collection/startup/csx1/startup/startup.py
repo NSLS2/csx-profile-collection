@@ -1,7 +1,3 @@
-# Make ophyd listen to pyepics.
-from ophyd import setup_ophyd
-setup_ophyd()
-
 # Set up a RunEngine and use metadata backed by a sqlite file.
 from bluesky import RunEngine
 from bluesky.utils import get_history
