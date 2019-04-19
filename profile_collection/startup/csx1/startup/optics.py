@@ -11,7 +11,7 @@ from ..devices.optics import (PGM, M3AMirror, PID)
 
 # M1A, M1B1, M1B2
 
-m1a = FMBHexapodMirror('XF:23IDA-OP:1{Mir:1', name='m1a')
+m1a = FMBHexapodMirror('XF:23IDA-OP:1{Mir:1', name='m1a', labels=['optics'])
 
 # VLS-PGM
 
@@ -20,24 +20,24 @@ pgm = PGM('XF:23ID1-OP{Mon',
 
 # M3A Mirror
 
-m3a = M3AMirror('XF:23ID1-OP{Mir:3',  name='m3a')
+m3a = M3AMirror('XF:23ID1-OP{Mir:3',  name='m3a', labels=['optics'])
 
 # Slits
 
-slt1 = SlitsGapCenter('XF:23ID1-OP{Slt:1', name='slt1')
-slt2 = SlitsGapCenter('XF:23ID1-OP{Slt:2', name='slt2')
-slt3 = SlitsXY('XF:23ID1-OP{Slt:3', name='slt3')
+slt1 = SlitsGapCenter('XF:23ID1-OP{Slt:1', name='slt1', labels=['optics'])
+slt2 = SlitsGapCenter('XF:23ID1-OP{Slt:2', name='slt2', labels=['optics'])
+slt3 = SlitsXY('XF:23ID1-OP{Slt:3', name='slt3', labels=['optics'])
 
 # Diagnostic Manipulators
 
-diag2_y = EpicsMotor('XF:23ID1-BI{Diag:2-Ax:Y}Mtr', name='diag2_y')
-diag3_y = EpicsMotor('XF:23ID1-BI{Diag:3-Ax:Y}Mtr', name='diag3_y')
-diag5_y = EpicsMotor('XF:23ID1-BI{Diag:5-Ax:Y}Mtr', name='diag5_y')
-diag6_y = EpicsMotor('XF:23ID1-BI{Diag:6-Ax:Y}Mtr', name='diag6_y')
+diag2_y = EpicsMotor('XF:23ID1-BI{Diag:2-Ax:Y}Mtr', name='diag2_y', labels=['optics'])
+diag3_y = EpicsMotor('XF:23ID1-BI{Diag:3-Ax:Y}Mtr', name='diag3_y', labels=['optics'])
+diag5_y = EpicsMotor('XF:23ID1-BI{Diag:5-Ax:Y}Mtr', name='diag5_y', labels=['optics'])
+diag6_y = EpicsMotor('XF:23ID1-BI{Diag:6-Ax:Y}Mtr', name='diag6_y', labels=['optics'])
 
 # Setpoint for PID loop
 
-diag6_pid = PID('XF:23ID1-OP{FBck}', name='diag6_pid')
+diag6_pid = PID('XF:23ID1-OP{FBck}', name='diag6_pid', labels=['optics'])
 
 ## FCCD slow shutter
 

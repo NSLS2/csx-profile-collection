@@ -49,7 +49,7 @@ for i in [1, 3]:
 #     getattr(cube_beam, f'stats{i}').total.kind = 'hinted'
 
 # This was imported in 00-startup.py #  used to generate the list: [thing.name for thing in get_all_positioners()]
-
+"""
 BlueskyMagics.positioners = [
     cryoangle,
     delta,
@@ -108,3 +108,4 @@ BlueskyMagics.positioners = [
     tardis.gamma,
     theta,
 ]
+"""

@@ -20,17 +20,17 @@ class NullMotor(SoftPositioner):
 
 
 class Tardis(E6C):  #this works for mu=0
-    h = Cpt(PseudoSingle, '')
-    k = Cpt(PseudoSingle, '')
-    l = Cpt(PseudoSingle, '')
+    h = Cpt(PseudoSingle, '', labels=['tardis'])
+    k = Cpt(PseudoSingle, '', labels=['tardis'])
+    l = Cpt(PseudoSingle, '', labels=['tardis'])
 
-    theta = Cpt(EpicsMotor, 'XF:23ID1-ES{Dif-Ax:Th}Mtr')
-    mu = Cpt(NullMotor)
+    theta = Cpt(EpicsMotor, 'XF:23ID1-ES{Dif-Ax:Th}Mtr', labels=['tardis'])
+    mu = Cpt(NullMotor, labels=['tardis'])
 
-    chi =   Cpt(NullMotor)
-    phi =   Cpt(NullMotor)
-    delta = Cpt(EpicsMotor, 'XF:23ID1-ES{Dif-Ax:Del}Mtr')
-    gamma = Cpt(EpicsMotor, 'XF:23ID1-ES{Dif-Ax:Gam}Mtr')
+    chi =   Cpt(NullMotor, labels=['tardis'])
+    phi =   Cpt(NullMotor, labels=['tardis'])
+    delta = Cpt(EpicsMotor, 'XF:23ID1-ES{Dif-Ax:Del}Mtr', labels=['tardis'])
+    gamma = Cpt(EpicsMotor, 'XF:23ID1-ES{Dif-Ax:Gam}Mtr', labels=['tardis'])
 
 
     def __init__(self, *args, **kwargs):
