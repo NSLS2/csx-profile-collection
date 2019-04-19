@@ -1,9 +1,12 @@
-from bluesky.plans import Count
-from bluesky.callbacks import LiveTable, LivePlot
+from bluesky.plans import count
+#from bluesky.callbacks import LiveTable, LivePlot
 
 
-assert diag6_monitor.connected
+assert dif_beam.connected
 assert sclr.connected
+dif_beam.stats5.total.kind = 'hinted'
+sclr.channels.chan1.kind = 'hinted'
+sclr.channels.chan2.kind = 'hinted'
 
 
-RE(Count([diag6_monitor, sclr]), LiveTable(['sclr_ch2', 'diag6_monitor']))
+RE(count([dif_beam, sclr], num=3))
