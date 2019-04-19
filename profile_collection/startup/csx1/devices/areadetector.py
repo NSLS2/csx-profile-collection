@@ -10,6 +10,9 @@ from ophyd.areadetector.plugins import PluginBase, ProcessPlugin
 from ophyd import Component as Cpt
 from ophyd.device import FormattedComponent as FCpt
 from ophyd import AreaDetector
+from ophyd.utils import set_and_wait
+import time as ttime
+import itertools
 
 from ophyd.sim import NullStatus
 
@@ -47,7 +50,6 @@ class HDF5PluginSWMR(HDF5Plugin):
     _default_configuration_attrs = (HDF5Plugin._default_configuration_attrs +
                                     ('swmr_active', 'swmr_mode',
                                      'swmr_supported'))
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.stage_sigs['swmr_mode'] = 1
@@ -64,6 +66,7 @@ class HDF5PluginWithFileStore(HDF5PluginSWMR, FileStoreHDF5IterativeWrite):
         # stash this so that it is available on resume
         self._ret = super().make_filename()
         return self._ret
+
 
 class FCCDCam(AreaDetectorCam):
     sdk_version = Cpt(EpicsSignalRO, 'SDKVersion_RBV')
@@ -119,8 +122,6 @@ class ProductionCamBase(DetectorBase):
         super().pause()
 
     def stage(self):
-        from ophyd.utils import set_and_wait
-        import time as ttime
 
         # pop both string and object versions to be paranoid
         self.stage_sigs.pop('cam.acquire', None)
@@ -150,7 +151,7 @@ class ProductionCamStandard(SingleTrigger, ProductionCamBase):
 
     def pause(self):
         set_val = 0
-        self.hdf5.capture.put(set_val)
+        set_and_wait(self.hdf5.capture, set_val)
         #val = self.hdf5.capture.get()
         ## Julien fix to ensure these are set correctly
         #print("pausing FCCD")
@@ -162,7 +163,8 @@ class ProductionCamStandard(SingleTrigger, ProductionCamBase):
 
     def resume(self):
         set_val = 1
-        self.hdf5.capture.put(set_val)
+        set_and_wait(self.hdf5.capture, set_val)
+        self.hdf5._point_counter = itertools.count()
         # The AD HDF5 plugin bumps its file_number and starts writing into a
         # *new file* because we toggled capturing off and on again.
         # Generate a new Resource document for the new file.
@@ -289,7 +291,6 @@ class StageOnFirstTrigger(ProductionCamTriggered):
 
 
     def trigger(self):
-        from ophyd.utils import set_and_wait
         import time as ttime
 
 
