@@ -11,7 +11,7 @@ from ..devices.optics import (PGM, M3AMirror, PID)
 
 # M1A, M1B1, M1B2
 
-m1a = FMBHexapodMirror('XF:23IDA-OP:1{Mir:1', name='m1a',labels=['optics'])
+m1a = FMBHexapodMirror('XF:23IDA-OP:1{Mir:1', name='m1a', labels=['optics'])
 
 # VLS-PGM
 
@@ -20,13 +20,13 @@ pgm = PGM('XF:23ID1-OP{Mon',
 
 # M3A Mirror
 
-m3a = M3AMirror('XF:23ID1-OP{Mir:3',  name='m3a',labels=['optics'])
+m3a = M3AMirror('XF:23ID1-OP{Mir:3',  name='m3a', labels=['optics'])
 
 # Slits
 
-slt1 = SlitsGapCenter('XF:23ID1-OP{Slt:1', name='slt1',labels=['optics'])
-slt2 = SlitsGapCenter('XF:23ID1-OP{Slt:2', name='slt2',labels=['optics'])
-slt3 = SlitsXY('XF:23ID1-OP{Slt:3', name='slt3',labels=['optics'])
+slt1 = SlitsGapCenter('XF:23ID1-OP{Slt:1', name='slt1', labels=['optics'])
+slt2 = SlitsGapCenter('XF:23ID1-OP{Slt:2', name='slt2', labels=['optics'])
+slt3 = SlitsXY('XF:23ID1-OP{Slt:3', name='slt3', labels=['optics'])
 
 # Diagnostic Manipulators
 

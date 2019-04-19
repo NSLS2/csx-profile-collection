@@ -24,11 +24,11 @@ class Tardis(E6C):  #this works for mu=0
     k = Cpt(PseudoSingle, '', labels=['tardis'])
     l = Cpt(PseudoSingle, '', labels=['tardis'])
 
-    theta = Cpt(EpicsMotor, 'XF:23ID1-ES{Dif-Ax:Th}Mtr',labels=['tardis'])
-    mu = Cpt(NullMotor,labels=['tardis'])
+    theta = Cpt(EpicsMotor, 'XF:23ID1-ES{Dif-Ax:Th}Mtr', labels=['tardis'])
+    mu = Cpt(NullMotor, labels=['tardis'])
 
-    chi =   Cpt(NullMotor,labels=['tardis'])
-    phi =   Cpt(NullMotor,labels=['tardis'])
+    chi =   Cpt(NullMotor, labels=['tardis'])
+    phi =   Cpt(NullMotor, labels=['tardis'])
     delta = Cpt(EpicsMotor, 'XF:23ID1-ES{Dif-Ax:Del}Mtr', labels=['tardis'])
     gamma = Cpt(EpicsMotor, 'XF:23ID1-ES{Dif-Ax:Gam}Mtr', labels=['tardis'])
 
