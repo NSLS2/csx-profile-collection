@@ -101,7 +101,7 @@ except NameError:
 except ValueError:
     pass
 
-nanop = NanoBundle('XF:23ID1-ES{Dif:Nano-Ax:', name='nanop')
+nanop = NanoBundle('XF:23ID1-ES{Dif:Nano-Ax:', name='nanop', labels=['motors'])
 #nanop.bz.remove_bad_signals()  # solve the issue with disconnection errors
 
 
@@ -134,7 +134,7 @@ for nn in nanop.component_names:
         continue
     getattr(nanop, nn).configure(_base_nano_setting)
 
-BlueskyMagics.positioners += [getattr(nanop, nn) for nn in nanop.component_names]
+# BlueskyMagics.positioners += [getattr(nanop, nn) for nn in nanop.component_names]
 
 #sd.baseline += [getattr(nanop, nn) for nn in nanop.component_names]
 sd.baseline += [nanop]

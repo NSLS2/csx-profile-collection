@@ -22,7 +22,7 @@ sy = SamplePosVirtualMotor('XF:23ID1-ES{Dif-Ax:SY}', name='sy')
 sz = SamplePosVirtualMotor('XF:23ID1-ES{Dif-Ax:SZ}', name='sz')
 say = EpicsMotor('XF:23ID1-ES{Dif-Ax:Y}Mtr', name='say')
 saz = EpicsMotor('XF:23ID1-ES{Dif-Ax:Z}Mtr', name='saz')
-cryoangle = Cryoangle('', name='cryoangle')
+cryoangle = Cryoangle('', name='cryoangle', labels=['optics'])
 
 
 # Nano-positioners

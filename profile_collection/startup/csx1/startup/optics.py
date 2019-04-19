@@ -30,14 +30,14 @@ slt3 = SlitsXY('XF:23ID1-OP{Slt:3', name='slt3')
 
 # Diagnostic Manipulators
 
-diag2_y = EpicsMotor('XF:23ID1-BI{Diag:2-Ax:Y}Mtr', name='diag2_y')
-diag3_y = EpicsMotor('XF:23ID1-BI{Diag:3-Ax:Y}Mtr', name='diag3_y')
-diag5_y = EpicsMotor('XF:23ID1-BI{Diag:5-Ax:Y}Mtr', name='diag5_y')
-diag6_y = EpicsMotor('XF:23ID1-BI{Diag:6-Ax:Y}Mtr', name='diag6_y')
+diag2_y = EpicsMotor('XF:23ID1-BI{Diag:2-Ax:Y}Mtr', name='diag2_y', labels=['optics'])
+diag3_y = EpicsMotor('XF:23ID1-BI{Diag:3-Ax:Y}Mtr', name='diag3_y', labels=['optics'])
+diag5_y = EpicsMotor('XF:23ID1-BI{Diag:5-Ax:Y}Mtr', name='diag5_y', labels=['optics'])
+diag6_y = EpicsMotor('XF:23ID1-BI{Diag:6-Ax:Y}Mtr', name='diag6_y', labels=['optics'])
 
 # Setpoint for PID loop
 
-diag6_pid = PID('XF:23ID1-OP{FBck}', name='diag6_pid')
+diag6_pid = PID('XF:23ID1-OP{FBck}', name='diag6_pid', labels=['optics'])
 
 ## FCCD slow shutter
 

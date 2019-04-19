@@ -15,7 +15,8 @@ sd.flyers = []
 sd.baseline = [theta, delta, gamma,
                sx, say, saz,
                cryoangle, sy, sz,
-               epu1, epu2,
+               #epu1, epu2,
+               epu2,
                slt1, slt2, slt3,
                m1a, m3a,
                #nanop, tardis,
@@ -49,7 +50,7 @@ for i in [1, 3]:
 #     getattr(cube_beam, f'stats{i}').total.kind = 'hinted'
 
 # This was imported in 00-startup.py #  used to generate the list: [thing.name for thing in get_all_positioners()]
-
+"""
 BlueskyMagics.positioners = [
     cryoangle,
     delta,
@@ -58,8 +59,8 @@ BlueskyMagics.positioners = [
     diag5_y,
     diag6_pid,
     diag6_y,
-    epu1.gap,
-    epu1.phase,
+    #epu1.gap,
+    #epu1.phase,
     epu2.gap,
     epu2.phase,
     es_diag1_y,
@@ -108,3 +109,4 @@ BlueskyMagics.positioners = [
     tardis.gamma,
     theta,
 ]
+"""

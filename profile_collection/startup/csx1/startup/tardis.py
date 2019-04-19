@@ -20,7 +20,7 @@ class NullMotor(SoftPositioner):
 
 
 class Tardis(E6C):  #this works for mu=0
-    h = Cpt(PseudoSingle, '')
+    h = Cpt(PseudoSingle, '', labels=['tardis'])
     k = Cpt(PseudoSingle, '')
     l = Cpt(PseudoSingle, '')
 
@@ -29,7 +29,7 @@ class Tardis(E6C):  #this works for mu=0
 
     chi =   Cpt(NullMotor)
     phi =   Cpt(NullMotor)
-    delta = Cpt(EpicsMotor, 'XF:23ID1-ES{Dif-Ax:Del}Mtr')
+    delta = Cpt(EpicsMotor, 'XF:23ID1-ES{Dif-Ax:Del}Mtr', labels=['optics'])
     gamma = Cpt(EpicsMotor, 'XF:23ID1-ES{Dif-Ax:Gam}Mtr')
 
 
