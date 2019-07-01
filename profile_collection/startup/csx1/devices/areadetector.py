@@ -198,6 +198,12 @@ class TriggeredCamExposure(Device):
         # Exposure time = 0
         # Cycle time = 1
 
+        # A NullStatus is always immediate 'done'.
+        # This will be AND-ed with non-null statuses below, if applicable,
+        # effectively reporting that this set operation is done when *all* the
+        # individual set operations are done.
+        status = NullStatus()  
+
         if exp[0] is not None:
             Efccd = exp[0] + self._Tc + self._To
             # To = start of FastCCD Exposure
@@ -211,19 +217,19 @@ class TriggeredCamExposure(Device):
             hh = exp[0] + self._To          # MCS Count Gate Stop
 
             # Set delay generator
-            self.parent.dg1.A.set(aa)
-            self.parent.dg1.B.set(bb)
-            self.parent.dg1.C.set(cc)
-            self.parent.dg1.D.set(dd)
-            self.parent.dg1.E.set(ee)
-            self.parent.dg1.F.set(ff)
-            self.parent.dg1.G.set(gg)
-            self.parent.dg1.H.set(hh)
-            self.parent.dg2.A.set(0)
-            self.parent.dg2.B.set(0.0005)
+            status &= self.parent.dg1.A.set(aa)
+            status &= self.parent.dg1.B.set(bb)
+            status &= self.parent.dg1.C.set(cc)
+            status &= self.parent.dg1.D.set(dd)
+            status &= self.parent.dg1.E.set(ee)
+            status &= self.parent.dg1.F.set(ff)
+            status &= self.parent.dg1.G.set(gg)
+            status &= self.parent.dg1.H.set(hh)
+            status &= self.parent.dg2.A.set(0)
+            status &= self.parent.dg2.B.set(0.0005)
 
             # Set AreaDetector
-            self.parent.cam.acquire_time.set(Efccd)
+            status &= self.parent.cam.acquire_time.set(Efccd)
 
         # Now do period
         if exp[1] is not None:
@@ -232,12 +238,12 @@ class TriggeredCamExposure(Device):
             else:
                 p = exp[1]
 
-        self.parent.cam.acquire_period.set(p)
+        status &= self.parent.cam.acquire_period.set(p)
 
         if exp[2] is not None:
-            self.parent.cam.num_images.set(exp[2])
+            status &= self.parent.cam.num_images.set(exp[2])
 
-        return NullStatus()
+        return status
 
     def get(self):
         return None
