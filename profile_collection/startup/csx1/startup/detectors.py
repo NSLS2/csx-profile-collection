@@ -52,8 +52,8 @@ mcs = StruckSIS3820MCS('XF:23ID1-ES{Sclr:1}', name='mcs')
 diag6 = NoStatsCam('XF:23ID1-BI{Diag:6-Cam:1}', name='diag6')
 
 ## 20180726 needed to comment due to IOC1 problems
-#cube_beam = StandardCam('XF:23ID1-BI{Diag:5-Cam:1}', name='cube_beam')
-#_setup_stats(cube_beam)
+cube_beam = StandardCam('XF:23ID1-BI{Diag:5-Cam:1}', name='cube_beam')
+_setup_stats(cube_beam)
 
 dif_beam = StandardCam('XF:23ID1-ES{Dif-Cam:Beam}', name='dif_beam')
 _setup_stats(dif_beam)
@@ -81,7 +81,7 @@ fccd = StageOnFirstTrigger('XF:23ID1-ES{FCCD}',
 fccd.read_attrs = ['hdf5','mcs.wfrm']
 fccd.hdf5.read_attrs = []
 #fccd.hdf5._reg = db.reg
-fccd.configuration_attrs = ['cam.acquire_time',
+configuration_attrs_list = ['cam.acquire_time',
                             'cam.acquire_period',
                             'cam.image_mode',
                             'cam.num_images',
@@ -98,6 +98,11 @@ fccd.configuration_attrs = ['cam.acquire_time',
                             'dg1.C', 'dg1.D',
                             'dg1.E', 'dg1.F',
                             'dg1.G', 'dg1.H']
+
+for attr in configuration_attrs_list:
+    getattr(fccd, attr).kind='config'
+
+
 _setup_stats(fccd)
 
 

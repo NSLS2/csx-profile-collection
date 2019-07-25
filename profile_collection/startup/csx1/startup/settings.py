@@ -12,7 +12,7 @@ from .tardis import *
 #
 sd.monitors = []
 sd.flyers = []
-sd.baseline = [theta, delta, gamma,
+sd.baseline = [theta, delta, gamma, muR,
                sx, say, saz,
                cryoangle, sy, sz,
                epu1, epu2,
@@ -20,7 +20,7 @@ sd.baseline = [theta, delta, gamma,
                m1a, m3a,
                #nanop, tardis,
                tardis,
-               stemp, pgm]
+               stemp, pgm, inout]
 
 sclr.names.read_attrs=['name1','name2','name3','name4','name5','name6']  # TODO  WHAT IS THIS??? - Dan Allan
 sclr.channels.read_attrs=['chan1','chan2','chan3','chan4','chan5','chan6']
@@ -45,8 +45,8 @@ for i in [1, 3]:
 
 ## 20180726 needed to comment due to IOC1 problems
 #cube_beam.hints = {'fields': ['cube_beam_stats2_total', 'cube_beam_stats1_total']}
-# for i in [1, 2]:
-#     getattr(cube_beam, f'stats{i}').total.kind = 'hinted'
+for i in [1, 2]:
+     getattr(cube_beam, f'stats{i}').total.kind = 'hinted'
 
 # This was imported in 00-startup.py #  used to generate the list: [thing.name for thing in get_all_positioners()]
 """

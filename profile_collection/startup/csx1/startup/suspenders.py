@@ -8,7 +8,7 @@ from bluesky.suspenders import (SuspendBoolHigh,
 from ophyd import EpicsSignal
 from .startup import RE
 
-ring_suspender = SuspendFloor(EpicsSignal('XF:23ID-SR{}I-I'), 250, sleep=3*60)
+ring_suspender = SuspendFloor(EpicsSignal('XF:23ID-SR{}I-I'), 150, sleep=3*60)
 #ring_suspender = SuspendFloor(EpicsSignal('XF:23ID-SR{}I-I'), 250, sleep=3)
 fe_shut_suspender = SuspendBoolHigh(EpicsSignal('XF:23ID-PPS{Sh:FE}Pos-Sts'), sleep=10*60)
 #fe_shut_suspender = SuspendBoolHigh(EpicsSignal('XF:23ID-PPS{Sh:FE}Pos-Sts'), sleep=3)

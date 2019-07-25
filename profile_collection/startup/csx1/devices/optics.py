@@ -48,12 +48,12 @@ class PGM(Device):
         super().__init__(*args, **kwargs)
 
 
-class PID(PVPositioner):
+class PID(PVPositionerPC):
     readback = Cpt(EpicsSignalRO, 'PID-RB')
-    setpoint = Cpt(EpicsSignal, 'PID-SP', put_complete=True)
+    setpoint = Cpt(EpicsSignal, 'PID-SP') #,put_complete=True)
     #done = Cpt(EpicsSignalRO, 'PID:Busy-Sts')
     #done_value = 0
-    put_complete = True
+    #put_complete = True
 
     output = Cpt(EpicsSignalRO, 'PID.OVAL')
     enable = Cpt(EpicsSignal, 'Sts:FB-Sel')
