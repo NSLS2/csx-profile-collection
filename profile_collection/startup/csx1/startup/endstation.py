@@ -37,3 +37,6 @@ eta = EpicsMotor('XF:23ID1-ES{Diag:1-Ax:Eta}Mtr', name='eta')
 # Lakeshore 336 Temp Controller
 
 stemp = Lakeshore336('XF:23ID1-ES{TCtrl:1', name='stemp')
+
+# Holography chamber motor
+holoz = EpicsMotor('XF:23ID1-ES{Holo:Sample-Ax:Y}Mtr', name='holoz', labels=['motors'])
