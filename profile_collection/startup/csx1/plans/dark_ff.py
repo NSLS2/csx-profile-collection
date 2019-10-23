@@ -48,7 +48,7 @@ The pre-count shutter & gain states preserved.
         print('\tCurrent number of images = {}.\n'.format(
             fccd.cam.num_images.value))
 
-        yield from bps.sleep(.3)
+        yield from bps.sleep(.3) #TODO needed to make sure that the readback is changed im time for numim
 
         if numim is not None:
             print('\tSetting to {} images.\n'.format(numim))
@@ -60,13 +60,15 @@ The pre-count shutter & gain states preserved.
         gain_bit_dict = {0: 'auto', 1: 'x2', 2: 'x1'}
 
         yield from bps.mv(inout, 'In')
+        print('Beam blocked.')
         # This has to be 2 until we can selectively remove dark images
-        # get_fastccd_images()
+        # get_fastccd_images()  #TODO - fails here to _ct_dark
         yield from bps.sleep(fccd.cam.acquire_period.value*2.01)
         # SET TO 1 TO ARM FOR NEXT EVENT so that the FastCCD1 is
         # already bkg subt
+        print('Correcting live image dark...')
         yield from bps.mv(fccd.fccd1.capture_bgnd, 1)
-
+        print('Background updated.')
         # take darks
         yield from _ct_dark(detectors, gain_std, gain_bit_dict)
 
@@ -87,11 +89,18 @@ The pre-count shutter & gain states preserved.
 
 
 def _ct_dark(detectors, gain_bit_input, gain_bit_dict):
+    #adding because it gets  hung some where around here TODO
+    print('Moving gains next.')
+    yield from bps.sleep(1)
     yield from bps.mv(fccd.cam.fcric_gain, gain_bit_input)
     # if _gain_bit_input != 0:
     #     yield from bps.sleep(fccd.cam.acquire_period.value*2.01) # This has to be 2 until we can selectively remove dark images get_fastccd_images()
     print('\n\nGain bit set to {} for a gain value of {}\n'.format(
         gain_bit_input, gain_bit_dict.get(gain_bit_input)))
+
+    #adding because it gets hung somewhere around here #TODO
+    print('Ready to begin data collection next.')
+    yield from bps.sleep(1)
 
     # TODO use md csxtools dark correction
     yield from bp.count(detectors,
