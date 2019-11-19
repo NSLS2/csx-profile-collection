@@ -21,10 +21,19 @@ class M3AMirror(Device):
 
 class PGMEnergy(PVPositionerPC):
     readback = Cpt(EpicsSignalRO, 'o}Enrgy-I')
-    setpoint = Cpt(EpicsSignal, 'o}Enrgy-SP', limits=(200,2200))
+    setpoint = Cpt(EpicsSignal, 'o}Enrgy-SP', limits=(200, 2200))
     stop_signal = Cpt(EpicsSignal, 'o}Cmd:Stop-Cmd')
     stop_value = 1
 
+
+class MonoFly(Device):
+    start_sig = Cpt(EpicsSignal, '}Enrgy:Start-SP')
+    stop_sig = Cpt(EpicsSignal, '}Enrgy:Stop-SP')
+    velocity = Cpt(EpicsSignal, '}Enrgy:FlyVelo-SP')
+
+    fly_start = Cpt(EpicsSignal, '}Cmd:FlyStart-Cmd.PROC')
+    fly_stop = Cpt(EpicsSignal, '}Cmd:Stop-Cmd.PROC')
+    scan_status = Cpt(EpicsSignalRO, '}Sts:Scan-Sts', string=True)
 
 class PGM(Device):
     energy = Cpt(PGMEnergy, '')
@@ -32,6 +41,8 @@ class PGM(Device):
     mir_x = Cpt(EpicsMotor, 'o-Ax:MirX}Mtr')
     grt_pit = Cpt(EpicsMotor, 'o-Ax:GrtP}Mtr')
     grt_x = Cpt(EpicsMotor, 'o-Ax:GrtX}Mtr')
+
+    fly = Cpt(MonoFly, 'o')
 
     mir_temp_in = FmtCpt(EpicsSignalRO, '{self._temp_pv}-Chan:A}}T-I')
     grt_temp_in = FmtCpt(EpicsSignalRO, '{self._temp_pv}-Chan:B}}T-I')
@@ -80,7 +91,7 @@ class Nanopositioner(Device):
     by = Cpt(EpicsMotor, '-Ax:BtmY}Mtr')
     bz = Cpt(EpicsMotor, '-Ax:BtmZ}Mtr')
 
-    
+
 class FMBHexapodMirrorAxis(PVPositioner):
     readback = Cpt(EpicsSignalRO, 'Mtr_MON')
     setpoint = Cpt(EpicsSignal, 'Mtr_POS_SP')
@@ -111,5 +122,3 @@ class SlitsGapCenter(Device):
 class SlitsXY(Device):
     x = Cpt(EpicsMotor, '-Ax:X}Mtr', name='x')
     y = Cpt(EpicsMotor, '-Ax:Y}Mtr', name='y')
-
-
