@@ -108,7 +108,7 @@ _setup_stats(fccd)
 
 pixis = CSXRoperDetector('XF:23ID1-ES{PXO:1}', name='pixis')
 # Set the parameters for the roper detector
-pixis.stage_sigs['cam.image_mode'] = 0
+pixis.stage_sigs['cam.image_mode'] = 0  # "Normal" image mode
 pixis.stats1.kind = 'hinted'
 pixis.stats1.total.kind = 'hinted'
 pixis.hdf5.kind = 'hinted'
