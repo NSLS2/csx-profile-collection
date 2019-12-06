@@ -14,9 +14,9 @@ import bluesky.plans as bp
 
 from ..devices.scaler import PrototypeEpicsScaler, StruckSIS3820MCS
 from ..devices.areadetector import (StandardCam, NoStatsCam,
-                                  ProductionCamStandard,
-                                  ProductionCamTriggered,
-                                  StageOnFirstTrigger)
+                                    ProductionCamStandard,
+                                    ProductionCamTriggered,
+                                    StageOnFirstTrigger, CSXRoperDetector)
 from ..startup import db
 
 def _setup_stats(cam_in):
@@ -106,4 +106,10 @@ for attr in configuration_attrs_list:
 
 _setup_stats(fccd)
 
+roper = CSXRoperDetector('XF:23ID1-ES{PXO:1}', name='roper')
+# Set the parameters for the roper detector
+roper.stage_sigs['cam.image_mode'] = 0
+roper.stats1.kind = 'hinted'
+roper.stats1.total.kind = 'hinted'
+roper.hdf5.kind = 'hinted'
 

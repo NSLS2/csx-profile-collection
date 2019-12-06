@@ -7,6 +7,15 @@ from ophyd.areadetector.detectors import DetectorBase
 from ophyd.areadetector.filestore_mixins import FileStoreHDF5IterativeWrite
 from ophyd.areadetector import ADComponent, EpicsSignalWithRBV
 from ophyd.areadetector.plugins import PluginBase, ProcessPlugin
+
+# Imports needed for the roper/pixis detector
+import os
+import ophyd
+from ophyd.areadetector import RoperDetector, RoperDetectorCam
+from ophyd.areadetector import ImagePlugin, StatsPlugin, ROIPlugin, HDF5Plugin
+from ophyd.areadetector.filestore_mixins import FileStoreHDF5IterativeWrite
+from ophyd.areadetector.trigger_mixins import SingleTrigger
+
 from ophyd import Component as Cpt
 from ophyd.device import FormattedComponent as FCpt
 from ophyd import AreaDetector
@@ -301,5 +310,41 @@ class StageOnFirstTrigger(ProductionCamTriggered):
         return super().trigger()
 
 
+# monkey patch for trailing slash problem
+def _ensure_trailing_slash(path):
+    """
+    'a/b/c' -> 'a/b/c/'
+    EPICS adds the trailing slash itself if we do not, so in order for the
+    setpoint filepath to match the readback filepath, we need to add the
+    trailing slash ourselves.
+    """
+    newpath = os.path.join(path, '')
+    if newpath[0] != '/' and newpath[-1] == '/':
+        # make it a windows slash
+        newpath = newpath[:-1]
+    return newpath
+
+ophyd.areadetector.filestore_mixins._ensure_trailing_slash = _ensure_trailing_slash
 
 
+class HDF5PluginWithFileStore(HDF5Plugin, FileStoreHDF5IterativeWrite):
+    ...
+
+
+class CSXRoperDetector(SingleTrigger, RoperDetector):
+    image = Cpt(ImagePlugin, 'image1:')
+    cam = Cpt(RoperDetectorCam, 'cam1:')
+    stats1 = Cpt(StatsPlugin, 'Stats1:')
+    stats2 = Cpt(StatsPlugin, 'Stats2:')
+    stats3 = Cpt(StatsPlugin, 'Stats3:')
+    stats4 = Cpt(StatsPlugin, 'Stats4:')
+    stats5 = Cpt(StatsPlugin, 'Stats5:')
+    roi1 = Cpt(ROIPlugin, 'ROI1:')
+    roi2 = Cpt(ROIPlugin, 'ROI2:')
+    roi3 = Cpt(ROIPlugin, 'ROI3:')
+    roi4 = Cpt(ROIPlugin, 'ROI4:')
+    hdf5 = Cpt(HDF5PluginWithFileStore,
+               suffix='HDF1:',
+               write_path_template='\\\\XF23ID1-SRV1\\xf23id1\\%Y\\%m\\%d\\',
+               read_path_template='/GPFS/xf23id/xf23id1/pixis_data/%Y/%m/%d/',
+               root='/GPFS/xf23id/xf23id1/')
