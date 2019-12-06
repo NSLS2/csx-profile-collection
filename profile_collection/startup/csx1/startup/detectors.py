@@ -106,10 +106,10 @@ for attr in configuration_attrs_list:
 
 _setup_stats(fccd)
 
-roper = CSXRoperDetector('XF:23ID1-ES{PXO:1}', name='roper')
+pixis = CSXRoperDetector('XF:23ID1-ES{PXO:1}', name='pixis')
 # Set the parameters for the roper detector
-roper.stage_sigs['cam.image_mode'] = 0
-roper.stats1.kind = 'hinted'
-roper.stats1.total.kind = 'hinted'
-roper.hdf5.kind = 'hinted'
+pixis.stage_sigs['cam.image_mode'] = 0
+pixis.stats1.kind = 'hinted'
+pixis.stats1.total.kind = 'hinted'
+pixis.hdf5.kind = 'hinted'
 

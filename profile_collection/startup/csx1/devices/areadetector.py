@@ -328,7 +328,8 @@ ophyd.areadetector.filestore_mixins._ensure_trailing_slash = _ensure_trailing_sl
 
 
 class HDF5PluginWithFileStore(HDF5Plugin, FileStoreHDF5IterativeWrite):
-    ...
+    def get_frames_per_point(self):
+        return self.parent.cam.num_images.get()
 
 
 class CSXRoperDetector(SingleTrigger, RoperDetector):
