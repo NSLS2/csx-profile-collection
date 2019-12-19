@@ -1,3 +1,6 @@
+import time
+import datetime
+
 from ophyd import Device, EpicsSignal, EpicsSignalRO
 from ophyd.device import Component as Cpt
 from ophyd.device import FormattedComponent as FmtCpt
@@ -71,9 +74,9 @@ class EPSTwoStateDevice(Device):
 
         self._state1_nm = nm_str1
         self._state2_nm = nm_str2
-        
+
         super().__init__(*args, **kwargs)
-       
+
         self._set_st = None
         self.read_attrs = ['status']
 
