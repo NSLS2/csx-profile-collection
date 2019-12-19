@@ -17,7 +17,6 @@ from ..devices.areadetector import (StandardCam, NoStatsCam,
                                   ProductionCamStandard,
                                   ProductionCamTriggered,
                                   StageOnFirstTrigger)
-from ..startup import db
 
 def _setup_stats(cam_in):
     for k in (f'stats{j}' for j in range(1, 6)):
@@ -80,7 +79,6 @@ fccd = StageOnFirstTrigger('XF:23ID1-ES{FCCD}',
                               name='fccd')
 fccd.read_attrs = ['hdf5','mcs.wfrm']
 fccd.hdf5.read_attrs = []
-#fccd.hdf5._reg = db.reg
 configuration_attrs_list = ['cam.acquire_time',
                             'cam.acquire_period',
                             'cam.image_mode',
