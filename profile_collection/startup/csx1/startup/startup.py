@@ -63,3 +63,8 @@ import numpy as np
 
 asc = scan  # alias
 rsc = relative_scan # alias
+
+# Setup bluesky darkframes.
+from .darkframes import dark_frame_preprocessors
+for dark_frame_preprocessor in dark_frame_preprocessors.values():
+    RE.preprocessors.append(dark_frame_preprocessor)
