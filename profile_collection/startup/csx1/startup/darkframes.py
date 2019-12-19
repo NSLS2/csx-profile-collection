@@ -18,7 +18,6 @@ class TemporarilyCustomizedDarkFrameProcessor(DarkFramePreprocessor):
 
 
 def dark_plan(gain, num_dark_images):
-    print('test')
     # Close shutter
     ...
     yield from bps.mv(inout,'In')
@@ -36,19 +35,34 @@ def dark_plan(gain, num_dark_images):
     # Structure of reading is
     # {fccd.cam.num_images.name: {'value': ..., 'timestamp': ...}}
     original_num_images = reading[fccd.cam.num_images.name]['value']
-    print(f'!!!!!!!!!!!! changing num_images to {num_dark_images}\noriginal_num_images: {original_num_images}')
+
+    # We need to put the dark frames in a separate Resource because
+    # it may have a different 'frames_per_point' than the light frames.
+    # This means we need to unstage, update the num_images, and then
+    # re-stage. It is important to update num_images before re-staging
+    # so that the new Resource, which is written during the staging
+    # process, reports the correct frames_per_point (derived from
+    # reading the num_images signal).
+    # It's just as well that the dark frames go in a separate file, as
+    # they may be referenced by multiple future runs of varied sizes, so
+    # for export purposes it is helpful not to lump them in a file along
+    # side light frames that could in some cases be very large.
+    yield from bps.unstage(fccd)
     yield from bps.mv(fccd.cam.num_images, num_dark_images)
 
+    yield from bps.stage(fccd)
     yield from bps.trigger(fccd, group='darkframe-trigger')
     yield from bps.wait('darkframe-trigger')
 
     snapshot = SnapshotDevice(fccd)
 
+    yield from bps.unstage(fccd)
+
     if gain == 0:
         yield from bps.mv(fccd.fccd1.capture_bgnd, 1)
     # Set num_images back to where it was.
-    print(f'!!!!!!!!!!!! changing num_images to {original_num_images}')
     yield from bps.mv(fccd.cam.num_images, original_num_images)
+    yield from bps.stage(fccd)
 
     # Open shutter
     yield from bps.mv(inout,'Out')
