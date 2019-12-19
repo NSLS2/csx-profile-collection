@@ -1,3 +1,6 @@
+import functools
+import operator
+
 from ophyd import (EpicsScaler, EpicsSignal, EpicsSignalRO, Device,
                    SingleTrigger, HDF5Plugin, ImagePlugin, StatsPlugin,
                    ROIPlugin, TransformPlugin, OverlayPlugin)
@@ -198,6 +201,8 @@ class TriggeredCamExposure(Device):
         # Exposure time = 0
         # Cycle time = 1
 
+        statuses = []
+
         if exp[0] is not None:
             Efccd = exp[0] + self._Tc + self._To
             # To = start of FastCCD Exposure
@@ -223,7 +228,8 @@ class TriggeredCamExposure(Device):
             self.parent.dg2.B.set(0.0005)
 
             # Set AreaDetector
-            self.parent.cam.acquire_time.set(Efccd)
+            st = self.parent.cam.acquire_time.set(Efccd)
+            statuses.append(st)
 
         # Now do period
         if exp[1] is not None:
@@ -232,12 +238,20 @@ class TriggeredCamExposure(Device):
             else:
                 p = exp[1]
 
-        self.parent.cam.acquire_period.set(p)
+        st = self.parent.cam.acquire_period.set(p)
+        statuses.append(st)
 
         if exp[2] is not None:
-            self.parent.cam.num_images.set(exp[2])
+            st = self.parent.cam.num_images.set(exp[2])
+            statuses.append(st)
 
-        return NullStatus()
+        # This return a combined status object that is "finished"
+        # when all of the status objects that we have collected
+        # in the list `statuses` has finished. This pattern is used
+        # because we end up with a different number of things being set,
+        # and therefore a varied number of status objects, depending
+        # on the `if` blocks above.
+        return functools.reduce(operator.and_, statuses)
 
     def get(self):
         return None
