@@ -7,7 +7,7 @@ import bluesky.plan_stubs as bps
 def spiral_continuous(detectors,
                       x_motor, y_motor, x_start, y_start, npts,
                       probe_size, overlap=0.8,  *,
-                      tilt=0.0, per_step=None, md=None):
+                      tilt=0.0, per_step=None, y_over_x_ratio=1.0, md=None):
     '''Continuously increasing radius spiral scan.
 
     centered around (x_start, y_start) which is generic regarding
@@ -29,6 +29,8 @@ def spiral_continuous(detectors,
         radius of probe in units of motors
     overlap : float
         fraction of probe overlap
+    y_over_x_ratio : float, optional
+        the ratio of the y / x distortion. Default: 1.0 (no distortion).
 
     ----------------------------------------------------------------
     Not implemented yet:
@@ -63,7 +65,7 @@ def spiral_continuous(detectors,
         # this is to get the first point to be the center
         T = 2*i/(R+0.0000001)
         bx = (overlap*probe_size*R * np.cos(T)) + bx_init
-        bz = (overlap*probe_size*R * np.sin(T)) + bz_init
+        bz = (overlap*probe_size*R * np.sin(T) * y_over_x_ratio) + bz_init
         bxs.append(bx)
         bzs.append(bz)
 
