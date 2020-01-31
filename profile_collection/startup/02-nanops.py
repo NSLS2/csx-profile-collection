@@ -105,6 +105,52 @@ nanop = NanoBundle('XF:23ID1-ES{Dif:Nano-Ax:', name='nanop', labels=['motors'])
 #nanop.bz.remove_bad_signals()  # solve the issue with disconnection errors
 
 
+class MotorPairX(Device):
+    tx = Cpt(NanoMotor, nanop.tx.prefix)
+    bx = Cpt(NanoMotor, nanop.bx.prefix)
+    def __init__(self, *args, **kwargs):
+        """A bundle device to move a pair of motors to the same distance"""
+        super().__init__(*args, **kwargs)
+        self.update_diff()
+
+    def update_diff(self):
+        self.diff = self.tx.user_readback.get() - self.bx.user_readback.get()
+
+    def set(self, value):
+        st_master = self.tx.set(value)  # master motor
+        st_slave = self.bx.set(value - self.diff)  # slave motor
+        return st_master & st_slave
+
+
+class MotorPairZ(Device):
+    tz = Cpt(NanoMotor, nanop.tz.prefix)
+    bz = Cpt(NanoMotor, nanop.bz.prefix)
+    def __init__(self, *args, **kwargs):
+        """A bundle device to move a pair of motors to the same distance"""
+        super().__init__(*args, **kwargs)
+        self.update_diff()
+
+    def update_diff(self):
+        self.diff = self.tz.user_readback.get() - self.bz.user_readback.get()
+
+    def set(self, value):
+        st_master = self.tz.set(value)  # master motor
+        st_slave = self.bz.set(value - self.diff)  # slave motor
+        return st_master & st_slave
+
+
+mpx = MotorPairX(name='mpx')
+mpz = MotorPairZ(name='mpz')
+
+mpx.kind = 'hinted'
+mpx.tx.kind = 'hinted'
+mpx.bx.kind = 'hinted'
+
+mpz.kind = 'hinted'
+mpz.tz.kind = 'hinted'
+mpz.bz.kind = 'hinted'
+
+
 # Velocity (tested 0.5, 0.1, 0.05, 0.01)
 
 # this was 0.30 but AB tried scanning with larger step
