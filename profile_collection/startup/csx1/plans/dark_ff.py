@@ -33,14 +33,22 @@ The pre-count shutter & gain states preserved.
     """
     if detectors is None:
         detectors = [fccd]
-
+    print('starting dark')
     try:
+        getit = inout.read()
+        dark_shutter_state = getit['inout_status']['value']
+        dark_sh_dict = {'Inserted': 'In', 'Not Inserted': 'Out'}
+        gain_bit_dict = {0: 'auto', 1: 'x2', 2: 'x1'}
+
         # TODO figureout kwargs and self to mkae up to line 44 a
         # single definition
-        getit = fccd.cam.num_images.read()
+        getit = fccd.cam.read_configuration()
+        print('read config')
         oldnumim = getit['fccd_cam_num_images']['value']
-        getit = fccd.cam.acquire_time
         acq_time = getit['fccd_cam_acquire_time']['value']
+        acq_period =  getit['fccd_cam_acquire_period']['value']
+        gain_state = getit['fccd_cam_fcric_gain']['value']
+        print('got fccd staring params')
         # Printing info
         print(
             '\nStarting procedure to acquire darks '
@@ -54,11 +62,6 @@ The pre-count shutter & gain states preserved.
         if numim is not None:
             print('\tSetting to {} images.\n'.format(numim))
             yield from bps.abs_set(fccd.cam.num_images, numim, wait=True)
-
-        dark_shutter_state = inout.status.value
-        dark_sh_dict = {'Inserted': 'In', 'Not Inserted': 'Out'}
-        gain_state = fccd.cam.fcric_gain.value
-        gain_bit_dict = {0: 'auto', 1: 'x2', 2: 'x1'}
 
         yield from bps.mv(inout, 'In')
         print('Beam blocked.')
@@ -77,16 +80,15 @@ The pre-count shutter & gain states preserved.
         # Putting things back
         yield from _ct_dark_cleanup(oldnumim, gain_bit_dict,
                                     gain_state, dark_sh_dict,
-                                    dark_shutter_state)
-
+                                    dark_shutter_state, acq_time)
     except Exception:
         yield from _ct_dark_cleanup(oldnumim, gain_bit_dict, gain_state,
-                                    dark_sh_dict, dark_shutter_state)
+                                    dark_sh_dict, dark_shutter_state,acq_time)
         raise
     except KeyboardInterrupt:
         yield from _ct_dark_cleanup(oldnumim, gain_bit_dict,
                                     gain_state, dark_sh_dict,
-                                    dark_shutter_state)
+                                    dark_shutter_state, acq_time)
         raise
 
 
@@ -104,7 +106,7 @@ def _ct_dark(detectors, gain_bit_input, gain_bit_dict):
     print('Ready to begin data collection next.')
     yield from bps.sleep(1)
 
-    # TODO use md csxtools dark correction
+    # TODO use remove this MD and add MD for plan_name
     yield from bp.count(detectors,
                         md={'fccd': {
                             'image': 'dark',
@@ -117,18 +119,20 @@ def _ct_dark(detectors, gain_bit_input, gain_bit_dict):
 
 
 def _ct_dark_cleanup(oldnumim, gain_bit_dict, gain_state,
-                     dark_sh_dict, dark_shutter_state):
+                     dark_sh_dict, dark_shutter_state,acq_time):
     print('\nReturning to intial conditions (pre-count).')
     yield from bps.abs_set(fccd.cam.num_images, oldnumim, wait=True)
 
     yield from bps.mv(fccd.cam.fcric_gain, gain_state)
     yield from bps.mv(inout, dark_sh_dict.get(dark_shutter_state))
-    yield from bps.sleep(fccd.cam.acquire_period.value)
+    yield from bps.sleep(acq_time*1)
+    getit = fccd.cam.fcric_gain.read()
+    gain_state_final = getit['fccd_cam_fcric_gain']['value']
 
     print('\tTotal images per trigger are NOW:\t {}'.format(
         fccd.cam.num_images.setpoint))
     print('\tFCCD FCRIC gain value is NOW:\t\t {}\n\n'.format(
-        gain_bit_dict.get(fccd.cam.fcric_gain.value)))
+        gain_bit_dict.get(gain_state_final)))
 
 
 def ct_dark_all(numim=None, detectors=None):
@@ -152,14 +156,23 @@ def ct_dark_all(numim=None, detectors=None):
     if detectors is None:
         detectors = [fccd]
     try:
-        oldnumim = fccd.cam.num_images.value
+
+        getit =  inout.read()
+        dark_shutter_state = getit['inout_status']['value']
+        dark_sh_dict = {'Inserted': 'In', 'Not Inserted': 'Out'}
+        gain_bit_dict = {0: 'auto', 1: 'x2', 2: 'x1'}
+
+        getit = fccd.cam.read_configuration()
+        oldnumim = getit['fccd_cam_num_images']['value']
+        acq_time = getit['fccd_cam_acquire_time']['value']
+        acq_period =  getit['fccd_cam_acquire_period']['value']
+        gain_state = getit['fccd_cam_fcric_gain']['value']
 
         # Printing info
         print('\nStarting procedure to acquire darks '
               '{:3.3}Hz or {:3.3f}s.\n'.format(
-                  1/fccd.cam.acquire_time.value, fccd.cam.acquire_time.value))
-        print('\tCurrent number of images = {}.\n'.format(
-            fccd.cam.num_images.value))
+                  1/acq_time, acq_time))
+        print('\tCurrent number of images = {}.\n'.format(oldnumim))
 
         yield from bps.sleep(.3)
 
@@ -167,16 +180,11 @@ def ct_dark_all(numim=None, detectors=None):
             print('\tSetting to {} images.\n'.format(numim))
             yield from bps.abs_set(fccd.cam.num_images, numim, wait=True)
 
-        dark_shutter_state = inout.status.value
-        dark_sh_dict = {'Inserted': 'In', 'Not Inserted': 'Out'}
-        gain_state = fccd.cam.fcric_gain.value
-
-        gain_bit_dict = {0: 'auto', 1: 'x2', 2: 'x1'}
 
         yield from bps.mv(inout, 'In')
         # This has to be 2 until we can selectively remove dark images
         # get_fastccd_images()
-        yield from bps.sleep(fccd.cam.acquire_period.value*2.01)
+        yield from bps.sleep(acq_time*2.01)
         # SET TO 1 TO ARM FOR NEXT EVENT so that the FastCCD1 is
         # already bkg subt
         yield from bps.mv(fccd.fccd1.capture_bgnd, 1)
@@ -189,14 +197,14 @@ def ct_dark_all(numim=None, detectors=None):
         # Putting things back
         yield from _ct_dark_cleanup(oldnumim, gain_bit_dict,
                                     gain_state, dark_sh_dict,
-                                    dark_shutter_state)
+                                    dark_shutter_state,acq_time)
 
     except Exception:
         yield from _ct_dark_cleanup(oldnumim, gain_bit_dict,
                                     gain_state, dark_sh_dict,
-                                    dark_shutter_state)
+                                    dark_shutter_state, acq_time)
         raise
     except KeyboardInterrupt:
         yield from _ct_dark_cleanup(oldnumim, gain_bit_dict, gain_state,
-                                    dark_sh_dict, dark_shutter_state)
+                                    dark_sh_dict, dark_shutter_state, acq_time)
         raise
