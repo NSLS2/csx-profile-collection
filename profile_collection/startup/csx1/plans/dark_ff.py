@@ -37,16 +37,17 @@ The pre-count shutter & gain states preserved.
     try:
         # TODO figureout kwargs and self to mkae up to line 44 a
         # single definition
-        oldnumim = fccd.cam.num_images.value
-
+        getit = fccd.cam.num_images.read()
+        oldnumim = getit['fccd_cam_num_images']['value']
+        getit = fccd.cam.acquire_time
+        acq_time = getit['fccd_cam_acquire_time']['value']
         # Printing info
         print(
             '\nStarting procedure to acquire darks '
             '{:3.3}Hz or {:3.3f}s.\n'.format(
-                1/fccd.cam.acquire_time.value, fccd.cam.acquire_time.value))
+                1/acq_time, acq_time))
 
-        print('\tCurrent number of images = {}.\n'.format(
-            fccd.cam.num_images.value))
+        print('\tCurrent number of images = {}.\n'.format(oldnumim))
 
         yield from bps.sleep(.3) #TODO needed to make sure that the readback is changed im time for numim
 
@@ -63,11 +64,12 @@ The pre-count shutter & gain states preserved.
         print('Beam blocked.')
         # This has to be 2 until we can selectively remove dark images
         # get_fastccd_images()  #TODO - fails here to _ct_dark
-        yield from bps.sleep(fccd.cam.acquire_period.value*2.01)
+        yield from bps.sleep(acq_time*2.01)
         # SET TO 1 TO ARM FOR NEXT EVENT so that the FastCCD1 is
         # already bkg subt
         print('Correcting live image dark...')
         yield from bps.mv(fccd.fccd1.capture_bgnd, 1)
+        yield from bps.sleep(0.3)
         print('Background updated.')
         # take darks
         yield from _ct_dark(detectors, gain_std, gain_bit_dict)
