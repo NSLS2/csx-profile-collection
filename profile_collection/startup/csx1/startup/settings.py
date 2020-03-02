@@ -20,7 +20,8 @@ sd.baseline = [theta, delta, gamma, muR,
                m1a, m3a,
                #nanop, tardis,
                tardis,
-               stemp, pgm, inout, es_diag1_y]
+               stemp, pgm,
+               inout, es_diag1_y, diag6_pid]
 
 sclr.names.read_attrs=['name1','name2','name3','name4','name5','name6']  # TODO  WHAT IS THIS??? - Dan Allan
 sclr.channels.read_attrs=['chan1','chan2','chan3','chan4','chan5','chan6']
