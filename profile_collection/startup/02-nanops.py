@@ -117,7 +117,7 @@ except NameError:
 except ValueError:
     pass
 
-nanop = NanoBundle('XF:23ID1-ES{Dif:Nano-Ax:', name='nanop', labels=['motors'])
+nanop = NanoBundle('XF:23ID1-ES{Dif:Nano-Ax:', name='nanop', labels=['motor, optics, nanops'])
 #nanop.bz.remove_bad_signals()  # solve the issue with disconnection errors
 
 
