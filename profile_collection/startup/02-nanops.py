@@ -1,6 +1,6 @@
 from ophyd.epics_motor import EpicsMotor
 from ophyd.device import Component as Cpt
-from ophyd.signal import EpicsSignal
+from ophyd.signal import EpicsSignal, EpicsSignalRO
 from ophyd.status import (MoveStatus, DeviceStatus, wait as status_wait, StatusBase)
 from ophyd import MotorBundle
 from ophyd.utils.epics_pvs import raise_if_disconnected
@@ -15,7 +15,7 @@ class NanoMotor(EpicsMotor):
 
     _default_configuration_attrs = (
         epics_config_attrs +
-        ['dly', 'rtry', 'rdbd', 'rmod', 'cnen', 'pcof', 'icof'])#TODO ensure not part of baseline data
+        ['dly', 'rtry', 'rdbd', 'rmod', 'cnen', 'pcof', 'icof' ])#TODO ensure not part of baseline data
     #user_setpoint = Cpt(EpicsSignal, 'PA_sm') #not v3 asmbly epics. .VAL should be
     dly = Cpt(EpicsSignal, '.DLY')
     rtry = Cpt(EpicsSignal, '.RTRY')
@@ -45,6 +45,7 @@ class NanoMotorOpenLoop(EpicsMotor): #TODO unverified for v3 asmbly epics
     cnen = Cpt(EpicsSignal, '.CNEN')
     pcof = Cpt(EpicsSignal, '.PCOF')
     icof = Cpt(EpicsSignal, '.ICOF')
+    svrb = Cpt(EpicsSignalRO, 'scan_volt_RBV') #voltage of peizo expansion mode, should remain in baseline
     t_settle = Cpt(EpicsSignal, 'SETL')
 
     @property
@@ -96,6 +97,16 @@ class NanoMotorWithGentleStop(NanoMotor):
             self.motor_stop.put(1, wait=False)
             super().stop(success=success)
 
+class NanoVoltSignal(Device):
+    tx_svrb = Cpt(EpicsSignalRO, 'TopX}scan_volt_RBV')
+    ty_svrb = Cpt(EpicsSignalRO, 'TopY}scan_volt_RBV')
+    tz_svrb = Cpt(EpicsSignalRO, 'TopZ}scan_volt_RBV')
+    bx_svrb = Cpt(EpicsSignalRO, 'BtmX}scan_volt_RBV')
+    by_svrb = Cpt(EpicsSignalRO, 'BtmY}scan_volt_RBV')
+    bz_svrb = Cpt(EpicsSignalRO, 'BtmZ}scan_volt_RBV')
+
+
+nanopvolt = NanoVoltSignal('XF:23ID1-ES{Dif:Nano-Ax:', name='nanopvolt')
 
 class NanoBundle(MotorBundle):
     #tx = Cpt(NanoMotor, 'TopX}Mtr') # essentially open loop mode
