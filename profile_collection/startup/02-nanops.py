@@ -133,8 +133,8 @@ nanop = NanoBundle('XF:23ID1-ES{Dif:Nano-Ax:', name='nanop', labels=['motor, opt
 
 
 class MotorPairX(Device):
-    tx = Cpt(NanoMotor, nanop.tx.prefix)
-    bx = Cpt(NanoMotor, nanop.bx.prefix)
+    tx = Cpt(NanoMotorWithGentleStop, nanop.tx.prefix)
+    bx = Cpt(NanoMotorWithGentleStop, nanop.bx.prefix)
     def __init__(self, *args, **kwargs):
         """A bundle device to move a pair of motors to the same distance"""
         super().__init__(*args, **kwargs)
@@ -148,10 +148,26 @@ class MotorPairX(Device):
         st_slave = self.bx.set(value - self.diff)  # slave motor
         return st_master & st_slave
 
+class MotorPairY(Device):
+    ty = Cpt(NanoMotorWithGentleStop, nanop.ty.prefix)
+    by = Cpt(NanoMotorWithGentleStop, nanop.by.prefix)
+    def __init__(self, *args, **kwargs):
+        """A bundle device to move a pair of motors to the same distance"""
+        super().__init__(*args, **kwargs)
+        self.update_diff()
+
+    def update_diff(self):
+        self.diff = self.ty.user_readback.get() - self.by.user_readback.get()
+
+    def set(self, value):
+        st_master = self.ty.set(value)  # master motor
+        st_slave = self.by.set(value - self.diff)  # slave motor
+        return st_master & st_slave
+
 
 class MotorPairZ(Device):
-    tz = Cpt(NanoMotor, nanop.tz.prefix)
-    bz = Cpt(NanoMotor, nanop.bz.prefix)
+    tz = Cpt(NanoMotorWithGentleStop, nanop.tz.prefix)
+    bz = Cpt(NanoMotorWithGentleStop, nanop.bz.prefix)
     def __init__(self, *args, **kwargs):
         """A bundle device to move a pair of motors to the same distance"""
         super().__init__(*args, **kwargs)
@@ -167,11 +183,16 @@ class MotorPairZ(Device):
 
 
 mpx = MotorPairX(name='mpx')
+mpy = MotorPairY(name='mpy')
 mpz = MotorPairZ(name='mpz')
 
 mpx.kind = 'hinted'
 mpx.tx.kind = 'hinted'
 mpx.bx.kind = 'hinted'
+
+mpy.kind = 'hinted'
+mpy.ty.kind = 'hinted'
+mpy.by.kind = 'hinted'
 
 mpz.kind = 'hinted'
 mpz.tz.kind = 'hinted'
