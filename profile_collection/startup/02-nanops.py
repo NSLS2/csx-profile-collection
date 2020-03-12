@@ -24,6 +24,7 @@ class NanoMotor(EpicsMotor):
     cnen = Cpt(EpicsSignal, '.CNEN')
     pcof = Cpt(EpicsSignal, '.PCOF')
     icof = Cpt(EpicsSignal, '.ICOF')
+    oplp = Cpt(EpicsSignal, '.STOP') #USING .STOP to open control loop.  normal .STOP should not do this
 
 
 class NanoMotorOpenLoop(EpicsMotor): #TODO unverified for v3 asmbly epics
@@ -45,7 +46,7 @@ class NanoMotorOpenLoop(EpicsMotor): #TODO unverified for v3 asmbly epics
     cnen = Cpt(EpicsSignal, '.CNEN')
     pcof = Cpt(EpicsSignal, '.PCOF')
     icof = Cpt(EpicsSignal, '.ICOF')
-    svrb = Cpt(EpicsSignalRO, 'scan_volt_RBV') #voltage of peizo expansion mode, should remain in baseline
+    #svrb = Cpt(EpicsSignalRO, 'scan_volt_RBV') #voltage of peizo expansion mode, should remain in baseline
     t_settle = Cpt(EpicsSignal, 'SETL')
 
     @property
@@ -97,19 +98,24 @@ class NanoMotorWithGentleStop(NanoMotor):
             self.motor_stop.put(1, wait=False)
             super().stop(success=success)
 
-class NanoVoltSignal(Device):
-    tx_svrb = Cpt(EpicsSignalRO, 'TopX}scan_volt_RBV')
-    ty_svrb = Cpt(EpicsSignalRO, 'TopY}scan_volt_RBV')
-    tz_svrb = Cpt(EpicsSignalRO, 'TopZ}scan_volt_RBV')
-    bx_svrb = Cpt(EpicsSignalRO, 'BtmX}scan_volt_RBV')
-    by_svrb = Cpt(EpicsSignalRO, 'BtmY}scan_volt_RBV')
-    bz_svrb = Cpt(EpicsSignalRO, 'BtmZ}scan_volt_RBV')
+class NanoSignal(Device):
+    svolt = Cpt(EpicsSignalRO, 'scan_volt_RBV', name = 'svolt')
+    noslip = Cpt(EpicsSignal, 'noslip_tog_RBV', name = 'noslip', write_pv = 'noslip_tog')
 
 
-nanopvolt = NanoVoltSignal('XF:23ID1-ES{Dif:Nano-Ax:', name='nanopvolt')
+class NanoBundleSignal(Device):
+    tx = Cpt(NanoSignal, 'TopX}')
+    ty = Cpt(NanoSignal, 'TopY}')
+    tz = Cpt(NanoSignal, 'TopZ}')
+    bx = Cpt(NanoSignal, 'BtmX}')
+    by = Cpt(NanoSignal, 'BtmY}')
+    bz = Cpt(NanoSignal, 'BtmZ}')
+
+
+nanopsignal = NanoBundleSignal('XF:23ID1-ES{Dif:Nano-Ax:', name='nanopsignal')
 
 class NanoBundle(MotorBundle):
-    #tx = Cpt(NanoMotor, 'TopX}Mtr') # essentially open loop mode
+    #tx = Cpt(NanoMotor, 'TopX}Mtr') # essentially open loop mode for v3 asmbly epics until we can update epics driver
     tx = Cpt(NanoMotorWithGentleStop, 'TopX}Mtr')
     ty = Cpt(NanoMotorWithGentleStop, 'TopY}Mtr')
     tz = Cpt(NanoMotorWithGentleStop, 'TopZ}Mtr')
@@ -129,7 +135,7 @@ except ValueError:
     pass
 
 nanop = NanoBundle('XF:23ID1-ES{Dif:Nano-Ax:', name='nanop', labels=['motor, optics, nanops'])
-#nanop.bz.remove_bad_signals()  # solve the issue with disconnection errors
+#nanop.bz.remove_bad_signals()  # solve the issue with disconnection errors #TODO is this needed for v3 asmbly epics
 
 
 class MotorPairX(Device):
@@ -221,7 +227,7 @@ mpz.bz.kind = 'hinted'
 #                      }
 
 for cpt in ['tx', 'ty', 'tz', 'bx', 'by', 'bz']:
-    getattr(nanop, cpt).configuration_attrs.extend(['velocity', 'acceleration'])
+    getattr(nanop, cpt).configuration_attrs.extend(['velocity', 'acceleration'])#TODO add offset, egu, offset dir, UEIP
 
 #COMMENT BELOW FOR NEW NANOP TESTING
 #for nn in nanop.component_names:
