@@ -42,6 +42,18 @@ class NoStatsCam(SingleTrigger, AreaDetector):
     pass
 
 
+class MonitorStatsCam(SingleTrigger, AreaDetector):
+    stats1 = Cpt(StatsPlugin, "Stats1:")
+    roi1 = Cpt(ROIPlugin, "ROI1:")
+    proc1 = Cpt(ProcessPlugin, "Proc1:")
+
+    def subscribe(self, *args, **kwargs):
+        return self.stast1.cenx.subscribe(*args, **kwargs)
+
+    def unbuscribe(self, *args, **kwargs):
+        return self.stast1.cenx.unsubscribe(*args, **kwargs)
+
+
 class HDF5PluginSWMR(HDF5Plugin):
     swmr_active = Cpt(EpicsSignalRO, 'SWMRActive_RBV')
     swmr_mode = Cpt(EpicsSignalWithRBV, 'SWMRMode')
@@ -256,7 +268,6 @@ class ProductionCamTriggered(ProductionCamStandard):
         self._mcs_prefix = mcs_prefix
         super().__init__(*args, **kwargs)
 
-
     def trigger(self):
         self.mcs.trigger()
         return super().trigger()
@@ -266,11 +277,7 @@ class ProductionCamTriggered(ProductionCamStandard):
         return super().read()
 
 
-
-
 class StageOnFirstTrigger(ProductionCamTriggered):
-
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -289,17 +296,11 @@ class StageOnFirstTrigger(ProductionCamTriggered):
         self._acquisition_signal.clear_sub(self._acquire_changed)
         self.trigger_staged = False
 
-
     def trigger(self):
         import time as ttime
-
 
         if not self.trigger_staged:
             self._trigger_stage()
             self.trigger_staged = True
 
         return super().trigger()
-
-
-
-
