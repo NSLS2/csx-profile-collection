@@ -24,6 +24,7 @@ class NanoMotor(EpicsMotor):
     cnen = Cpt(EpicsSignal, '.CNEN')
     pcof = Cpt(EpicsSignal, '.PCOF')
     icof = Cpt(EpicsSignal, '.ICOF')
+    stat = Cpt(EpicsSignal, '.STAT') #alarm status
     oplp = Cpt(EpicsSignal, '.STOP') #USING .STOP to open control loop.  normal .STOP should not do this
 
 
@@ -100,6 +101,7 @@ class NanoMotorWithGentleStop(NanoMotor):
 
 class NanoSignal(Device):
     svolt = Cpt(EpicsSignalRO, 'scan_volt_RBV', name = 'svolt')
+    svoltscan = Cpt(EpicsSignal, 'scan_volt_RBV.SCAN', name = 'svoltscan')
     noslip = Cpt(EpicsSignal, 'noslip_tog_RBV', name = 'noslip', write_pv = 'noslip_tog')
 
 
