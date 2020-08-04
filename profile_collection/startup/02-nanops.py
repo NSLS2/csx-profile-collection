@@ -152,9 +152,10 @@ class MotorPairX(Device):
         self.diff = self.tx.user_readback.get() - self.bx.user_readback.get()
 
     def set(self, value):
-        st_master = self.tx.set(value)  # master motor
-        st_slave = self.bx.set(value - self.diff)  # slave motor
-        return st_master & st_slave
+        st_leader = self.tx.set(value)  # leading motor
+        st_follower = self.bx.set(value - self.diff)  # following motor
+        return st_leader & st_follower
+
 
 class MotorPairY(Device):
     ty = Cpt(NanoMotorWithGentleStop, nanop.ty.prefix)
@@ -168,9 +169,9 @@ class MotorPairY(Device):
         self.diff = self.ty.user_readback.get() - self.by.user_readback.get()
 
     def set(self, value):
-        st_master = self.ty.set(value)  # master motor
-        st_slave = self.by.set(value - self.diff)  # slave motor
-        return st_master & st_slave
+        st_leader = self.ty.set(value)  # leading motor
+        st_follower = self.by.set(value - self.diff)  # following motor
+        return st_leader & st_follower
 
 
 class MotorPairZ(Device):
@@ -185,9 +186,9 @@ class MotorPairZ(Device):
         self.diff = self.tz.user_readback.get() - self.bz.user_readback.get()
 
     def set(self, value):
-        st_master = self.tz.set(value)  # master motor
-        st_slave = self.bz.set(value - self.diff)  # slave motor
-        return st_master & st_slave
+        st_leader = self.tz.set(value)  # leading motor
+        st_follower = self.bz.set(value - self.diff)  # following motor
+        return st_leader & st_follower
 
 
 mpx = MotorPairX(name='mpx')
