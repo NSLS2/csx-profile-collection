@@ -1,7 +1,23 @@
+import os
+
 # Set up a RunEngine and use metadata backed by a sqlite file.
 from bluesky import RunEngine
-from bluesky.utils import get_history
-RE = RunEngine(get_history())
+
+from distutils.version import LooseVersion
+import bluesky
+if bluesky.__version__ < LooseVersion('1.6'):
+    OLD_BLUESKY = True
+else:
+    OLD_BLUESKY = False
+
+if OLD_BLUESKY:
+    from bluesky.utils import get_history
+    RE = RunEngine(get_history())
+else:
+    from bluesky.utils import PersistentDict
+    RE = RunEngine({})
+    RE.md = PersistentDict(os.path.expanduser('~/.config/bluesky/persistent-dict'))
+
 
 # Set up a Broker.
 from databroker import Broker
