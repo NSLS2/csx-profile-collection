@@ -25,7 +25,7 @@ def _setup_stats(cam_in):
         cam_in.read_attrs.append(k)
         getattr(cam_in, k).read_attrs = ['total']
 
-# TODO add to plugin
+#TODO add to plugin
 diag6_pid_threshold = EpicsSignal('XF:23ID1-BI{Diag:6-Cam:1}Stats1:CentroidThreshold',
         name = 'diag6_pid_threshold')
 
@@ -50,7 +50,8 @@ mcs = StruckSIS3820MCS('XF:23ID1-ES{Sclr:1}', name='mcs')
 #diag3 = StandardCam('XF:23ID1-BI{Diag:3-Cam:1}', name='diag3')
 #_setup_stats(diag3)
 
-diag6 = MonitorStatsCam('XF:23ID1-BI{Diag:6-Cam:1}', name='diag6')
+diag6 = MonitorStatsCam('XF:23ID1-BI{Diag:6-Cam:1}', name='diag6') #TODO testing
+#diag6 = NoStatsCam('XF:23ID1-BI{Diag:6-Cam:1}', name='diag6') #TODO revert above test
 
 ## 20180726 needed to comment due to IOC1 problems
 cube_beam = StandardCam('XF:23ID1-BI{Diag:5-Cam:1}', name='cube_beam')
@@ -99,7 +100,17 @@ configuration_attrs_list = ['cam.acquire_time',
                             'dg1.A', 'dg1.B',
                             'dg1.C', 'dg1.D',
                             'dg1.E', 'dg1.F',
-                            'dg1.G', 'dg1.H']
+                            'dg1.G', 'dg1.H',
+                            'fccd1.enable_bgnd',
+                            'fccd1.enable_gain',
+                            'fccd1.enable_size',
+                            'fccd1.rows',
+                            'fccd1.row_offset',
+                            'fccd1.overscan_cols',
+                            ]
+
+roi_params = ['.min_xyz.min_y', '.min_xyz.min_x','.size.y', '.size.x','.name_']
+configuration_attrs_list.extend(['roi' + str(i) + string for i in range(1,5) for string in roi_params])
 
 for attr in configuration_attrs_list:
     getattr(fccd, attr).kind='config'
