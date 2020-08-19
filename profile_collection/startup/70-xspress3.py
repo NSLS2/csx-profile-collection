@@ -1,4 +1,4 @@
-from hxntools.detectors.xspress3 import (XspressTrigger,
+from nslsii.detectors.xspress3 import (XspressTrigger,
                                        Xspress3Detector,
                                        Xspress3FileStore,
                                        Xspress3Channel,
