@@ -41,10 +41,10 @@ def EfixQapprox(detectors, E_start, E_end, npts, E_shift=0, *,
     deltaCALC = 0
     thetaCALC = 0
 
-    E_init = x_motor.readback.value
+    E_init = x_motor.readback.get()
     lam_init = 12398/E_init
-    delta_init = delta.user_readback.value
-    theta_init = theta.user_readback.value
+    delta_init = delta.user_readback.get()
+    theta_init = theta.user_readback.get()
     dsp = lam_init/(2*np.sin(np.radians(delta_init/2)))
     theta_offset = delta_init/2 - theta_init
 
@@ -142,14 +142,14 @@ def EfixQ(detectors, E_start, E_end, steps, E_shift=0, *,
     pattern_args = dict(x_motor=x_motor, x_start=E_start,
                         steps=steps, E_shift=E_shift)
 
-    E_init = x_motor.readback.value
-    tardis.calc.energy = (x_motor.setpoint.value + E_shift)/10000
+    E_init = x_motor.readback.get()
+    tardis.calc.energy = (x_motor.setpoint.get() + E_shift)/10000
     h_init = tardis.position.h
     k_init = tardis.position.k
     l_init = tardis.position.l
-    delta_init = delta.user_readback.value
-    theta_init = theta.user_readback.value
-    gamma_init = gamma.user_readback.value
+    delta_init = delta.user_readback.get()
+    theta_init = theta.user_readback.get()
+    gamma_init = gamma.user_readback.get()
 
     deltas = []
     thetas = []
@@ -210,7 +210,7 @@ def EfixQ(detectors, E_start, E_end, steps, E_shift=0, *,
         print('\nMoving back to motor positions immediately before scan\n')
         yield from reset_plan
         yield from bps.sleep(1)
-        tardis.calc.energy = (pgm.energy.readback.value + E_shift)/10000
+        tardis.calc.energy = (pgm.energy.readback.get() + E_shift)/10000
         print('Returned to Q at ({:.4f}, {:.4f}, {:.4f})'.format(
             tardis.h.position, tardis.k.position, tardis.l.position))
 
@@ -221,7 +221,7 @@ def EfixQ(detectors, E_start, E_end, steps, E_shift=0, *,
         print('\nMoving back to motor positions immediately before scan\n')
         yield from reset_plan
         yield from bps.sleep(1)
-        tardis.calc.energy = (pgm.energy.readback.value + E_shift)/10000
+        tardis.calc.energy = (pgm.energy.readback.get() + E_shift)/10000
         print('Returned to Q at ({:.4f}, {:.4f}, {:.4f})'.format(
             tardis.h.position, tardis.k.position, tardis.l.position))
         raise
