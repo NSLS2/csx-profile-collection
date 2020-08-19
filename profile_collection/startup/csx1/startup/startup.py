@@ -58,8 +58,8 @@ import matplotlib.pyplot as plt
 plt.ion()
 
 # Make plots update live while scans run.
-from bluesky.utils import install_qt_kicker
-install_qt_kicker()
+# from bluesky.utils import install_qt_kicker
+# install_qt_kicker()
 
 # Optional: set any metadata that rarely changes.
 # RE.md['beamline_id'] = 'YOUR_BEAMLINE_HERE'
