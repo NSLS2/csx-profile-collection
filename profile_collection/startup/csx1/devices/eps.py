@@ -1,8 +1,12 @@
+import time as ttime
+
 from ophyd import Device, EpicsSignal, EpicsSignalRO
 from ophyd.device import Component as Cpt
 from ophyd.device import FormattedComponent as FmtCpt
 from ophyd.device import DeviceStatus
 
+
+# TODO: sync this class with the one in nslsii.devices.TwoButtonShutter.
 class EPSTwoStateDevice(Device):
     # @tcaswell, the names don't need to be fixed. These commands run
     # when the record is processed, you could as easily poke .PROC
@@ -52,7 +56,7 @@ class EPSTwoStateDevice(Device):
                 st._finished(success=False)
             if value == 'None':
                 if not st.done:
-                    time.sleep(.5)
+                    ttime.sleep(.5)
                     cmd_sig.set(1)
                     ts = datetime.datetime.fromtimestamp(timestamp).strftime(_time_fmtstr)
                     print('** ({}) Had to reactuate shutter while {}ing'.format(ts, val))
@@ -71,9 +75,9 @@ class EPSTwoStateDevice(Device):
 
         self._state1_nm = nm_str1
         self._state2_nm = nm_str2
-        
+
         super().__init__(*args, **kwargs)
-       
+
         self._set_st = None
         self.read_attrs = ['status']
 
@@ -81,5 +85,3 @@ class EPSTwoStateDevice(Device):
         self.state2_str = cmd_str2
         self.state1_val = state1
         self.state2_val = state2
-
-
