@@ -29,7 +29,7 @@ class Interpolator(Device):
     output_deadband = Cpt(EpicsSignal, 'Val:DBand1-SP')
     output_drive = Cpt(EpicsSignalRO, 'Val:OutDrv1-I')
     interpolation_status = Cpt(EpicsSignalRO, 'Sts:Interp1-Sts', string=True)
-#    table = Cpt(EpicsSignal, 'Val:Table-Sel', name='table')
+    #table = Cpt(EpicsSignal, 'Val:Table-Sel', name='table')# this pv has no FLT
 
 
 class EPU(Device):
@@ -41,6 +41,7 @@ class EPU(Device):
     y_ang = FmCpt(EpicsSignalRO,'{self._ai_prefix}:FPGA:y_mrad-I')
     flt = Cpt(Interpolator, '-FLT}')
     rlt = Cpt(Interpolator, '-RLT}')
+    table = Cpt(EpicsSignal, '}Val:Table-Sel', name='table')# this pv has no FLT
 
     def __init__(self, *args, ai_prefix=None, epu_prefix=None, **kwargs):
         self._ai_prefix = ai_prefix

@@ -54,8 +54,8 @@ diag6 = MonitorStatsCam('XF:23ID1-BI{Diag:6-Cam:1}', name='diag6') #TODO testing
 #diag6 = NoStatsCam('XF:23ID1-BI{Diag:6-Cam:1}', name='diag6') #TODO revert above test
 
 ## 20180726 needed to comment due to IOC1 problems
-cube_beam = StandardCam('XF:23ID1-BI{Diag:5-Cam:1}', name='cube_beam')
-_setup_stats(cube_beam)
+#cube_beam = StandardCam('XF:23ID1-BI{Diag:5-Cam:1}', name='cube_beam')
+#_setup_stats(cube_beam)
 
 dif_beam = StandardCam('XF:23ID1-ES{Dif-Cam:Beam}', name='dif_beam')
 _setup_stats(dif_beam)
@@ -69,6 +69,9 @@ _setup_stats(dif_beam)
 #
 #dif_cam3 = StandardCam('XF:23ID1-ES{Dif-Cam:3}', name='dif_cam3')
 #_setup_stats(dif_cam3)
+
+## 20201219 - Machine studies for source characterization
+fs_cam = StandardCam('XF:23IDA-BI:1{FS:1-Cam:1}', name='fs_cam')
 
 #
 # FastCCD
@@ -109,7 +112,8 @@ configuration_attrs_list = ['cam.acquire_time',
                             'fccd1.overscan_cols',
                             ]
 
-roi_params = ['.min_xyz.min_y', '.min_xyz.min_x','.size.y', '.size.x','.name_']
+roi_params = ['.min_xyz', '.min_xyz.min_y', '.min_xyz.min_x',
+              '.size', '.size.y', '.size.x', '.name_']
 configuration_attrs_list.extend(['roi' + str(i) + string for i in range(1,5) for string in roi_params])
 
 for attr in configuration_attrs_list:

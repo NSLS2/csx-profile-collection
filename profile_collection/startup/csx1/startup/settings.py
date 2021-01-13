@@ -46,8 +46,8 @@ for i in [1, 3]:
 
 ## 20180726 needed to comment due to IOC1 problems
 #cube_beam.hints = {'fields': ['cube_beam_stats2_total', 'cube_beam_stats1_total']}
-for i in [1, 2]:
-     getattr(cube_beam, f'stats{i}').total.kind = 'hinted'
+#for i in [1, 2]:
+#     getattr(cube_beam, f'stats{i}').total.kind = 'hinted'
 
 # This was imported in 00-startup.py #  used to generate the list: [thing.name for thing in get_all_positioners()]
 """
