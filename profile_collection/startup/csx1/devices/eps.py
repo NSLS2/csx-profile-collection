@@ -1,4 +1,5 @@
 import time as ttime
+import datetime
 
 from ophyd import Device, EpicsSignal, EpicsSignalRO
 from ophyd.device import Component as Cpt
@@ -39,7 +40,12 @@ class EPSTwoStateDevice(Device):
         enums = self.status.enum_strs
 
         def shutter_cb(value, timestamp, **kwargs):
-            value = enums[int(value)]
+            try:
+                value = enums[int(value)]
+            except (ValueError, TypeError):
+                # we are here because value is a str not int
+                # just move on
+                ...
             if value == target_val:
                 self._set_st._finished()
                 self._set_st = None
@@ -49,7 +55,12 @@ class EPSTwoStateDevice(Device):
         count = 0
         def cmd_retry_cb(value, timestamp, **kwargs):
             nonlocal count
-            value = cmd_enums[int(value)]
+            try:
+                value = cmd_enums[int(value)]
+            except (ValueError, TypeError):
+                # we are here because value is a str not int
+                # just move on
+                ...
             count += 1
             if count > 5:
                 cmd_sig.clear_sub(cmd_retry_cb)
