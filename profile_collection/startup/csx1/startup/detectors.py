@@ -19,8 +19,7 @@ from ..devices.areadetector import (StandardCam, NoStatsCam,
                                     StageOnFirstTrigger,
                                     MonitorStatsCam)
 
-# We don't need it with nslsii.configure_base(...)
-# from ..startup import db
+from ..startup import db
 
 def _setup_stats(cam_in):
     for k in (f'stats{j}' for j in range(1, 6)):
