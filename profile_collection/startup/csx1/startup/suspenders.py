@@ -6,7 +6,9 @@ from bluesky.suspenders import (SuspendBoolHigh,
                                 SuspendOutBand)
 
 from ophyd import EpicsSignal
-from .startup import RE
+
+# We don't need it with nslsii.configure_base(...)
+# from .startup import RE
 
 ring_suspender = SuspendFloor(EpicsSignal('XF:23ID-SR{}I-I'), 150, sleep=3*60)
 #ring_suspender = SuspendFloor(EpicsSignal('XF:23ID-SR{}I-I'), 250, sleep=3)
