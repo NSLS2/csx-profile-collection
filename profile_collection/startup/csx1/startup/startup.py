@@ -18,3 +18,4 @@ from IPython import get_ipython
 ip = get_ipython()
 RE = ip.user_ns['RE']
 db = ip.user_ns['db']
+sd = ip.user_ns['sd']
