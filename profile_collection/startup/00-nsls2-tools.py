@@ -39,9 +39,22 @@ from ophyd.signal import EpicsSignalBase
 EpicsSignalBase.set_defaults(timeout=10, connection_timeout=10)  # new style
 
 
-from csx1.startup import *
-
-from IPython import get_ipython
+import appdirs
 import nslsii
+from IPython import get_ipython
+from bluesky.utils import PersistentDict
+from pathlib import Path
 
-nslsii.configure_olog(get_ipython().user_ns)
+ip = get_ipython()
+nslsii.configure_base(ip.user_ns, 'csx')
+nslsii.configure_olog(ip.user_ns)
+
+# Commenting out the DAMA-suggested location
+# (~/.local/share/bluesky/runengine-metadata), as the BL staff prefers a
+# separate location.
+# runengine_metadata_dir = appdirs.user_data_dir(appname="bluesky") / Path("runengine-metadata")
+runengine_metadata_dir = os.path.expanduser('~/.config/bluesky/persistent-dict')
+RE.md = PersistentDict(runengine_metadata_dir)
+
+
+from csx1.startup import *
