@@ -113,26 +113,26 @@ class Scaler(Device):
         return unstaged_cmpts
 
 
-sclr = Scaler("XF:08BM-ES:1{Sclr:1}", name="sclr")
-sclr.cnts.channels.read_attrs = [f"chan{j:02d}" for j in range(1, 21)]
-sclr.mcas.channels.read_attrs = [f"mca{j:02d}" for j in range(1, 21)]
-sclr.mcas.stage_sigs["channel_advance"] = "External"
-sclr.cnts.stage_sigs[sclr.cnts.channels.chan01.chname] = "dwell_time"
-sclr.mcas.stage_sigs[sclr.cnts.channels.chan01.chname] = "dwell_time"
+softglue = Scaler("XF:23ID1-ES{SoftGlue:1}", name="softglue")
+softglue.cnts.channels.read_attrs = [f"chan{j:02d}" for j in range(1, 21)]
+softglue.mcas.channels.read_attrs = [f"mca{j:02d}" for j in range(1, 21)]
+softglue.mcas.stage_sigs["channel_advance"] = "External"
+softglue.cnts.stage_sigs[softglue.cnts.channels.chan01.chname] = "dwell_time"
+softglue.mcas.stage_sigs[softglue.cnts.channels.chan01.chname] = "dwell_time"
 
-sclr.match_names(20)
-sclr.set_mode("counting")
+softglue.match_names(20)
+softglue.set_mode("counting")
 
 used_channels = 20
 
 # Set first 20 channels' kinds to "normal" (meaning the readings will appear in databroker,
 # but won't be displayed in a LiveTable or LivePlot).
-for cpt in sclr.cnts.channels.component_names[:used_channels]:
-    getattr(sclr.cnts.channels, cpt).s.kind = 'normal'
+for cpt in softglue.cnts.channels.component_names[:used_channels]:
+    getattr(softglue.cnts.channels, cpt).s.kind = 'normal'
 
 # Omit the rest of the channels (won't be recorded anyhow).
-for cpt in sclr.cnts.channels.component_names[used_channels:]:
-    getattr(sclr.cnts.channels, cpt).s.kind = 'omitted'
+for cpt in softglue.cnts.channels.component_names[used_channels:]:
+    getattr(softglue.cnts.channels, cpt).s.kind = 'omitted'
 
 # The "I0" channel should be recorded and displayed in the LiveTable and LivePlot.
-getattr(sclr.cnts.channels, 'chan02').s.kind = 'hinted'
+getattr(softglue.cnts.channels, 'chan02').s.kind = 'hinted'
