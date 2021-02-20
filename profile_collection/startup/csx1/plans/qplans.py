@@ -143,7 +143,7 @@ def EfixQ(detectors, E_start, E_end, steps, E_shift=0, *,
                         steps=steps, E_shift=E_shift)
 
     E_init = x_motor.readback.get()
-    tardis.calc.energy = (x_motor.setpoint.get() + E_shift)/10000
+    tardis.calc.energy = (x_motor.setpoint.get() + E_shift)/1000
     h_init = tardis.position.h
     k_init = tardis.position.k
     l_init = tardis.position.l
@@ -160,7 +160,7 @@ def EfixQ(detectors, E_start, E_end, steps, E_shift=0, *,
     x_range = max(E_vals) - min(E_vals)
 
     for E_val in E_vals:
-        tardis.calc.energy = (E_val + E_shift)/10000
+        tardis.calc.energy = (E_val + E_shift)/1000
         angles = tardis.forward([h_init, k_init, l_init])
         deltas.append(angles.delta)
         thetas.append(angles.theta)
@@ -210,7 +210,7 @@ def EfixQ(detectors, E_start, E_end, steps, E_shift=0, *,
         print('\nMoving back to motor positions immediately before scan\n')
         yield from reset_plan
         yield from bps.sleep(1)
-        tardis.calc.energy = (pgm.energy.readback.get() + E_shift)/10000
+        tardis.calc.energy = (pgm.energy.readback.get() + E_shift)/1000
         print('Returned to Q at ({:.4f}, {:.4f}, {:.4f})'.format(
             tardis.h.position, tardis.k.position, tardis.l.position))
 
@@ -221,7 +221,7 @@ def EfixQ(detectors, E_start, E_end, steps, E_shift=0, *,
         print('\nMoving back to motor positions immediately before scan\n')
         yield from reset_plan
         yield from bps.sleep(1)
-        tardis.calc.energy = (pgm.energy.readback.get() + E_shift)/10000
+        tardis.calc.energy = (pgm.energy.readback.get() + E_shift)/1000
         print('Returned to Q at ({:.4f}, {:.4f}, {:.4f})'.format(
             tardis.h.position, tardis.k.position, tardis.l.position))
         raise
