@@ -112,27 +112,31 @@ class Scaler(Device):
         self.match_names()
         return unstaged_cmpts
 
+softglue = Scaler("XF:23ID1-ES{SoftGlue:1}:", name="softglue")
+[setattr(getattr(softglue.cnts.channels, f'chan{j:02d}'), 'kind', 'omitted') for j in range(1, 33)]
 
-softglue = Scaler("XF:23ID1-ES{SoftGlue:1}", name="softglue")
-softglue.cnts.channels.read_attrs = [f"chan{j:02d}" for j in range(1, 21)]
-softglue.mcas.channels.read_attrs = [f"mca{j:02d}" for j in range(1, 21)]
-softglue.mcas.stage_sigs["channel_advance"] = "External"
-softglue.cnts.stage_sigs[softglue.cnts.channels.chan01.chname] = "dwell_time"
-softglue.mcas.stage_sigs[softglue.cnts.channels.chan01.chname] = "dwell_time"
+softglue.cnts.channels.chan05.kind = 'hinted'
+softglue.cnts.channels.chan01.kind = 'hinted'
 
-softglue.match_names(20)
-softglue.set_mode("counting")
+#softglue.cnts.channels.read_attrs = [f"chan{j:02d}" for j in range(1, 21)]
+#softglue.mcas.channels.read_attrs = [f"mca{j:02d}" for j in range(1, 21)]
+#softglue.mcas.stage_sigs["channel_advance"] = "External"
+#softglue.cnts.stage_sigs[softglue.cnts.channels.chan01.chname] = "dwell_time"
+#softglue.mcas.stage_sigs[softglue.cnts.channels.chan01.chname] = "dwell_time"
 
-used_channels = 20
+#softglue.match_names(20)
+#softglue.set_mode("counting")
 
-# Set first 20 channels' kinds to "normal" (meaning the readings will appear in databroker,
-# but won't be displayed in a LiveTable or LivePlot).
-for cpt in softglue.cnts.channels.component_names[:used_channels]:
-    getattr(softglue.cnts.channels, cpt).s.kind = 'normal'
+#used_channels = 20
+
+## Set first 20 channels' kinds to "normal" (meaning the readings will appear in databroker,
+## but won't be displayed in a LiveTable or LivePlot).
+#for cpt in softglue.cnts.channels.component_names[:used_channels]:
+#    getattr(softglue.cnts.channels, cpt).s.kind = 'normal'
 
 # Omit the rest of the channels (won't be recorded anyhow).
-for cpt in softglue.cnts.channels.component_names[used_channels:]:
-    getattr(softglue.cnts.channels, cpt).s.kind = 'omitted'
+#for cpt in softglue.cnts.channels.component_names[used_channels:]:
+#    getattr(softglue.cnts.channels, cpt).s.kind = 'omitted'
 
 # The "I0" channel should be recorded and displayed in the LiveTable and LivePlot.
-getattr(softglue.cnts.channels, 'chan02').s.kind = 'hinted'
+#getattr(softglue.cnts.channels, 'chan02').s.kind = 'hinted'
