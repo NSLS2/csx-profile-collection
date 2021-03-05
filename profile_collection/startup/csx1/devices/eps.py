@@ -5,6 +5,8 @@ from ophyd import Device, EpicsSignal, EpicsSignalRO
 from ophyd.device import Component as Cpt
 from ophyd.device import FormattedComponent as FmtCpt
 from ophyd.device import DeviceStatus
+## 20210305 debug with Maksim, ct_dark_all and related "set while another set is in progress" problems
+from nslsii.devices import _time_fmtstr
 
 
 # TODO: sync this class with the one in nslsii.devices.TwoButtonShutter.
