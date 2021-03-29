@@ -10,3 +10,6 @@ jobs:
   - template: collection-2021-1.0.yml@templates
     parameters:
       beamline_acronym: CSX
+  - template: collection-2021-1.2.yml@templates
+    parameters:
+      beamline_acronym: CSX
