@@ -24,6 +24,7 @@ class PGMEnergy(PVPositionerPC):
     setpoint = Cpt(EpicsSignal, 'o}Enrgy-SP', limits=(200, 2200))
     stop_signal = Cpt(EpicsSignal, 'o}Cmd:Stop-Cmd')
     stop_value = 1
+    egu = 'eV'
 
 
 class MonoFly(Device):
@@ -48,6 +49,7 @@ class PGM(Device):
     grt_temp_in = FmtCpt(EpicsSignalRO, '{self._temp_pv}-Chan:B}}T-I')
     mir_temp_out = FmtCpt(EpicsSignalRO, '{self._temp_pv}-Chan:C}}T-I')
     grt_temp_out = FmtCpt(EpicsSignalRO, '{self._temp_pv}-Chan:D}}T-I')
+    air_temp = FmtCpt(EpicsSignalRO, '{self._temp_pv}-Chan:D5}}T-I')
 
     grt1_temp = Cpt(EpicsSignalRO, '-Grt:1}T-I')
     grt2_temp = Cpt(EpicsSignalRO, '-Grt:2}T-I')
