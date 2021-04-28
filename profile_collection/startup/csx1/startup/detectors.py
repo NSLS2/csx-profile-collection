@@ -18,6 +18,7 @@ from ..devices.areadetector import (StandardCam, NoStatsCam,
                                     ProductionCamTriggered,
                                     StageOnFirstTrigger,
                                     MonitorStatsCam)
+
 from ..startup import db
 
 def _setup_stats(cam_in):
