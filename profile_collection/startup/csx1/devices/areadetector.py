@@ -153,8 +153,10 @@ class ProductionCamStandard(SingleTrigger, ProductionCamBase):
 
     hdf5 = Cpt(HDF5PluginWithFileStore,
                suffix='HDF1:',
-               write_path_template='/GPFS/xf23id/xf23id1/fccd_data/%Y/%m/%d/',
-               root='/GPFS/xf23id/xf23id1/',
+               #write_path_template='/GPFS/xf23id/xf23id1/fccd_data/%Y/%m/%d/',
+               write_path_template='/nsls2/data/csx/legacy/fccd_data/%Y/%m/%d/',
+               #root='/GPFS/xf23id/xf23id1/',
+               root='/nsls2/data/csx/legacy',
                reg=None)  # placeholder to be set on instance as obj.hdf5.reg
 
     def stop(self):
