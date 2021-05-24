@@ -53,7 +53,7 @@ nslsii.configure_olog(ip.user_ns)
 # (~/.local/share/bluesky/runengine-metadata), as the BL staff prefers a
 # separate location.
 # runengine_metadata_dir = appdirs.user_data_dir(appname="bluesky") / Path("runengine-metadata")
-runengine_metadata_dir = os.path.expanduser("/nsls2/data/csx/RE-metadata/")
+runengine_metadata_dir = os.path.expanduser("/nsls2/data/csx/shared/config/RE-metadata")
 RE.md = PersistentDict(runengine_metadata_dir)
 
 
