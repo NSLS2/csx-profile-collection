@@ -159,6 +159,25 @@ class ProductionCamStandard(SingleTrigger, ProductionCamBase):
                root='/nsls2/data/csx/legacy',
                reg=None)  # placeholder to be set on instance as obj.hdf5.reg
 
+    def make_data_key(self):
+        """
+        Override the base class to get the array shape from the HDF5 plugin.
+
+        The base class gets the shape from self.cam.array_size.  This does not
+        correctly represent the shape of the array written by the custom HDF5
+        plugin used on this detector, so we need to get the shape from the
+        plugin.
+        """
+        source = 'PV:{}'.format(self.prefix)
+        # This shape is expected to match arr.shape for the array.
+        shape = (
+            self.cam.num_images.get(),
+            self.hdf5.height.get(),
+            self.hdf5.width.get(),
+        )
+        return dict(shape=shape, source=source, dtype='array',
+                    external='FILESTORE:')
+
     def stop(self):
         self.hdf5.capture.put(0)
         return super().stop()
