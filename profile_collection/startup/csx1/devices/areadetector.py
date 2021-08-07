@@ -95,7 +95,8 @@ class FCCDCam(AreaDetectorCam):
 
 class FastCCDPlugin(PluginBase):
     _default_suffix = 'FastCCD1:'
-    capture_bgnd = Cpt(EpicsSignalWithRBV, 'CaptureBgnd')
+    capture_bgnd = Cpt(EpicsSignalWithRBV, 'CaptureBgnd', write_timeout=5,
+                       auto_monitor=False, put_complete=True)
     enable_bgnd = Cpt(EpicsSignalWithRBV, 'EnableBgnd')
     enable_gain = Cpt(EpicsSignalWithRBV, 'EnableGain')
     enable_size = Cpt(EpicsSignalWithRBV, 'EnableSize')
@@ -121,7 +122,6 @@ class ProductionCamBase(DetectorBase):
     proc1 = Cpt(ProcessPlugin, 'Proc1:')
     over1 = Cpt(OverlayPlugin, 'Over1:')
     fccd1 = Cpt(FastCCDPlugin, 'FastCCD1:')
-
 
     # This does nothing, but it's the right place to add code to be run
     # once at instantiation time.
