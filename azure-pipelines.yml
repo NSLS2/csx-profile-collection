@@ -16,3 +16,6 @@ jobs:
   - template: nsls2-collection-2021-2.0-py39.yml@templates
     parameters:
       beamline_acronym: CSX
+  - template: nsls2-collection-2021-2.1.yml@templates
+    parameters:
+      beamline_acronym: CSX
