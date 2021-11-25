@@ -41,10 +41,10 @@ def EfixQapprox(detectors, E_start, E_end, npts, E_shift=0, *,
     deltaCALC = 0
     thetaCALC = 0
 
-    E_init = x_motor.readback.get()
+    E_init = x_motor.setpoint.get()
     lam_init = 12398/E_init
-    delta_init = delta.user_readback.get()
-    theta_init = theta.user_readback.get()
+    delta_init = delta.user_setpoint.get()
+    theta_init = theta.user_setpoint.get()
     dsp = lam_init/(2*np.sin(np.radians(delta_init/2)))
     theta_offset = delta_init/2 - theta_init
 
@@ -142,7 +142,7 @@ def EfixQ(detectors, E_start, E_end, steps, E_shift=0, *,
     pattern_args = dict(x_motor=x_motor, x_start=E_start,
                         steps=steps, E_shift=E_shift)
 
-    E_init = x_motor.readback.get()
+    E_init = x_motor.setpoint.get()
     tardis.calc.energy = (x_motor.setpoint.get() + E_shift)/1000
     h_init = tardis.position.h
     k_init = tardis.position.k
