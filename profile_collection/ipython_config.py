@@ -81,7 +81,7 @@ c.InteractiveShellApp.extensions = ['pyOlog.cli.ipy']
 
 # Pre-load matplotlib and numpy for interactive use, selecting a particular
 # matplotlib backend and loop integration.
-c.TerminalIPythonApp.pylab = 'auto'
+# c.TerminalIPythonApp.pylab = 'auto'
 
 # Create a massive crash report when IPython encounters what may be an internal
 # error.  The default is to append a short message to the usual traceback
