@@ -103,9 +103,6 @@ class NanoSignal(Device):
     svolt = Cpt(EpicsSignalRO, 'scan_volt_RBV', name = 'svolt')
     svoltscan = Cpt(EpicsSignal, 'scan_volt_RBV.SCAN', name = 'svoltscan')
     noslip = Cpt(EpicsSignal, 'noslip_tog_RBV', name = 'noslip', write_pv = 'noslip_tog')
-    # 20210216 added following John's idea of checking the temperatures as
-    # a potential reason for periodic and unpredictable jumps during meshes
-    temp = Cpt(EpicsSignalRO, 'Ch_Temp', name = 'temp')
 
 
 class NanoBundleSignal(Device):
@@ -118,7 +115,6 @@ class NanoBundleSignal(Device):
 
 
 nanopsignal = NanoBundleSignal('XF:23ID1-ES{Dif:Nano-Ax:', name='nanopsignal')
-
 
 class NanoBundle(MotorBundle):
     #tx = Cpt(NanoMotor, 'TopX}Mtr') # essentially open loop mode for v3 asmbly epics until we can update epics driver

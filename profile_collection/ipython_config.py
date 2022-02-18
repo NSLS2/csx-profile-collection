@@ -81,7 +81,7 @@ c.InteractiveShellApp.extensions = ['pyOlog.cli.ipy']
 
 # Pre-load matplotlib and numpy for interactive use, selecting a particular
 # matplotlib backend and loop integration.
-c.TerminalIPythonApp.pylab = 'auto'
+# c.TerminalIPythonApp.pylab = 'auto'
 
 # Create a massive crash report when IPython encounters what may be an internal
 # error.  The default is to append a short message to the usual traceback
@@ -295,7 +295,7 @@ c.TerminalInteractiveShell.autocall = 0
 # c.TerminalInteractiveShell.deep_reload = False
 
 # Start logging to the given file in append mode.
-c.TerminalInteractiveShell.logappend = '/epics/xf/23id/ophyd/logs/xf23id1_log.py'
+# c.TerminalInteractiveShell.logappend = '/epics/xf/23id/ophyd/logs/xf23id1_log.py'
 
 #
 # c.TerminalInteractiveShell.xmode = 'Context'

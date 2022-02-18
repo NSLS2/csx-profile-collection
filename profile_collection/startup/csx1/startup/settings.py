@@ -23,6 +23,8 @@ sd.baseline = [theta, delta, gamma, muR,
                stemp, pgm,
                inout, es_diag1_y, diag6_pid]
 
+#bec.disable_baseline() #no print to CLI, just save to datastore
+
 sclr.names.read_attrs=['name1','name2','name3','name4','name5','name6']  # TODO  WHAT IS THIS??? - Dan Allan
 sclr.channels.read_attrs=['chan1','chan2','chan3','chan4','chan5','chan6']
 # Old-style hints config is replaced by the new 'kind' feature

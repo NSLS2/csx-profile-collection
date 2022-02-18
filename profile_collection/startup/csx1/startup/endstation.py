@@ -6,7 +6,16 @@ from ..devices.optics import (SamplePosVirtualMotor, Cryoangle,
                              Nanopositioner)
 
 from ..devices.lakeshore import Lakeshore336
+from ..devices.eps import EPSTwoStateDevice
 from .tardis import tardis
+
+# GVs
+tardis_gv = EPSTwoStateDevice('XF:23ID1-VA{Diag:06-GV:1}',                             
+                          state1='Closed', state2='Open',             
+                          cmd_str1='Cls', cmd_str2='Opn',                        
+                          nm_str1='Cls', nm_str2='Opn',                          
+                          name='tardis_gv') 
+
 
 # Diffo angles
 

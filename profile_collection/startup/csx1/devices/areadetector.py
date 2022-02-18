@@ -95,7 +95,8 @@ class FCCDCam(AreaDetectorCam):
 
 class FastCCDPlugin(PluginBase):
     _default_suffix = 'FastCCD1:'
-    capture_bgnd = Cpt(EpicsSignalWithRBV, 'CaptureBgnd')
+    capture_bgnd = Cpt(EpicsSignalWithRBV, 'CaptureBgnd', write_timeout=5,
+                       auto_monitor=False, put_complete=True)
     enable_bgnd = Cpt(EpicsSignalWithRBV, 'EnableBgnd')
     enable_gain = Cpt(EpicsSignalWithRBV, 'EnableGain')
     enable_size = Cpt(EpicsSignalWithRBV, 'EnableSize')
@@ -121,7 +122,6 @@ class ProductionCamBase(DetectorBase):
     proc1 = Cpt(ProcessPlugin, 'Proc1:')
     over1 = Cpt(OverlayPlugin, 'Over1:')
     fccd1 = Cpt(FastCCDPlugin, 'FastCCD1:')
-
 
     # This does nothing, but it's the right place to add code to be run
     # once at instantiation time.
@@ -153,9 +153,30 @@ class ProductionCamStandard(SingleTrigger, ProductionCamBase):
 
     hdf5 = Cpt(HDF5PluginWithFileStore,
                suffix='HDF1:',
-               write_path_template='/GPFS/xf23id/xf23id1/fccd_data/%Y/%m/%d/',
-               root='/GPFS/xf23id/xf23id1/',
+               #write_path_template='/GPFS/xf23id/xf23id1/fccd_data/%Y/%m/%d/',
+               write_path_template='/nsls2/data/csx/legacy/fccd_data/%Y/%m/%d/',
+               #root='/GPFS/xf23id/xf23id1/',
+               root='/nsls2/data/csx/legacy',
                reg=None)  # placeholder to be set on instance as obj.hdf5.reg
+
+    def make_data_key(self):
+        """
+        Override the base class to get the array shape from the HDF5 plugin.
+
+        The base class gets the shape from self.cam.array_size.  This does not
+        correctly represent the shape of the array written by the custom HDF5
+        plugin used on this detector, so we need to get the shape from the
+        plugin.
+        """
+        source = 'PV:{}'.format(self.prefix)
+        # This shape is expected to match arr.shape for the array.
+        shape = (
+            self.cam.num_images.get(),
+            self.hdf5.height.get(),
+            self.hdf5.width.get(),
+        )
+        return dict(shape=shape, source=source, dtype='array',
+                    external='FILESTORE:')
 
     def stop(self):
         self.hdf5.capture.put(0)
