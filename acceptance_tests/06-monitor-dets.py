@@ -28,3 +28,6 @@ def ct_xpcs(monitor_dets, _extramd_dict=None):
 
     # return to roginal state
     # revert_monitor_kind(monitor_dets, kind_states)
+
+
+ct_xpcs(monitor_dets)
