@@ -46,7 +46,7 @@ from bluesky.utils import PersistentDict
 from pathlib import Path
 
 ip = get_ipython()
-nslsii.configure_base(ip.user_ns, 'csx')
+nslsii.configure_base(ip.user_ns, 'csx', publish_documents_with_kafka=True)
 nslsii.configure_olog(ip.user_ns)
 
 # Commenting out the DAMA-suggested location
