@@ -8,3 +8,9 @@ These scripts are intended to be run manually with a "human in the loop".
 ```
 ipython --profile=collection -i SCRIPT_NAME
 ```
+
+### Workstations to maintain links
+- ws1
+- ws2
+- ws4
+- ws5 (presently unused.)
