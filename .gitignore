@@ -1,4 +1,5 @@
 history*
+db/ #contains dbhist 
 
 # Created by .gitignore support plugin (hsz.mobi)
 ### Python template
