@@ -66,24 +66,22 @@ class HDF5PluginWithFileStorePlain(HDF5Plugin, FileStoreHDF5IterativeWrite): ##S
         self._ret = super().make_filename()
         return self._ret
 
+    def describe(self):
+        ret = super().describe()
+        key = self.parent._image_name
+        cam_dtype = self.parent.cam.data_type.get(as_string=True)
+        type_map = {'UInt8': '|u1', 'UInt16': '<u2', 'Float32':'<f4', "Float64":'<f8'}
+        if cam_dtype in type_map:
+            ret[key].setdefault('dtype_str', type_map[cam_dtype])
+        return ret
 
-#class StandardProsilicaSaving(StandardProsilica): #TODOpmab original from SIX, but moved up and removed SIX custom StandardProsilica
-class StandardProsilicaSaving(StandardCam):#TODOpmab just random guess by andi to save for dif_cam1,2,3 will disable rois
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.enable_hdf5()
 
-    def enable_hdf5(self):
-        self.hdf5 = Cpt(HDF5PluginWithFileStorePlain,
+class StandardProsilicaWithHDF5(StandardCam):
+    hdf5 = Cpt(HDF5PluginWithFileStorePlain,
               suffix='HDF1:',
               #write_path_template='/nsls2/data/csx/legacy/prosilica_data/%Y/%m/%d',##TODOpmab - fix path if this works
               write_path_template='/nsls2/data/csx/legacy/datajunk/%Y/%m/%d',
               root='/nsls2/data/csx/legacy')
-        self.hdf5.kind = "normal"
-        ##TODOpmab - priority2, if works then stretch-TODO-overlays and image seperate (2 Tiffs or 2 H5 or 1 of each, but need to rebuild IOC for that)
-
-    def disable_hdf5(self):
-        self.hdf5 = None
 
 
 ###  #TODOpmab 2nd priority - STOLEN FROM SIX 21-areadetector.py --
