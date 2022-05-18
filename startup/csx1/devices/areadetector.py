@@ -82,6 +82,7 @@ class StandardProsilicaWithHDF5(StandardCam):
               #write_path_template='/nsls2/data/csx/legacy/prosilica_data/%Y/%m/%d',##TODOpmab - fix path if this works
               write_path_template='/nsls2/data/csx/legacy/datajunk/%Y/%m/%d',
               root='/nsls2/data/csx/legacy')
+    hdf5.kind = "normal"
 
 
 ###  #TODOpmab 2nd priority - STOLEN FROM SIX 21-areadetector.py --
