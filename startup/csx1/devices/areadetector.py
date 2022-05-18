@@ -1,6 +1,6 @@
 from ophyd import (EpicsScaler, EpicsSignal, EpicsSignalRO, Device,
                    SingleTrigger, HDF5Plugin, ImagePlugin, StatsPlugin,
-                   ROIPlugin, TransformPlugin, OverlayPlugin)
+                   ROIPlugin, TransformPlugin, OverlayPlugin, ProsilicaDetector)
 
 from ophyd.areadetector.cam import AreaDetectorCam
 from ophyd.areadetector.detectors import DetectorBase
@@ -24,7 +24,7 @@ import numpy as np
 from .stats_plugin import StatsPluginCSX
 
 
-class StandardCam(SingleTrigger, AreaDetector):
+class StandardCam(SingleTrigger, AreaDetector):#TODOpmab is there somethine more standard for prosilica? seems only used on prosilica. this does stats, but no image saving (unsure if easy to configure or not and enable/disable)
     stats1 = Cpt(StatsPlugin, 'Stats1:')
     stats2 = Cpt(StatsPlugin, 'Stats2:')
     stats3 = Cpt(StatsPlugin, 'Stats3:')
@@ -42,7 +42,7 @@ class NoStatsCam(SingleTrigger, AreaDetector):
     pass
 
 
-class MonitorStatsCam(SingleTrigger, AreaDetector):
+class MonitorStatsCam(SingleTrigger, AreaDetector): #TODO does this work or are we hacking EpicsSignals in custom plans
     stats1 = Cpt(StatsPlugin, "Stats1:")
     roi1 = Cpt(ROIPlugin, "ROI1:")
     proc1 = Cpt(ProcessPlugin, "Proc1:")
@@ -54,6 +54,164 @@ class MonitorStatsCam(SingleTrigger, AreaDetector):
         return self.stast1.cenx.unsubscribe(*args, **kwargs)
 
 
+class HDF5PluginWithFileStorePlain(HDF5Plugin, FileStoreHDF5IterativeWrite): ##SOURCED FROM BELOW FROM FCCD WITH SWMR removed
+    # AD v2.2.0 (at least) does not have this. It is present in v1.9.1.
+    file_number_sync = None
+
+    def get_frames_per_point(self):
+        return self.parent.cam.num_images.get()
+
+    def make_filename(self):
+        # stash this so that it is available on resume
+        self._ret = super().make_filename()
+        return self._ret
+
+
+#class StandardProsilicaSaving(StandardProsilica): #TODOpmab original from SIX, but moved up and removed SIX custom StandardProsilica
+class StandardProsilicaSaving(StandardCam):#TODOpmab just random guess by andi to save for dif_cam1,2,3 will disable rois
+    hdf5 = Cpt(HDF5PluginWithFileStorePlain,
+              suffix='HDF1:',
+              #write_path_template='/nsls2/data/csx/legacy/prosilica_data/%Y/%m/%d',##TODOpmab - fix path if this works
+              write_path_template='/nsls2/data/csx/legacy/datajunk/%Y/%m/%d',
+              root='/nsls2/data/csx/legacy')
+              ##TODOpmab - priority2, if works then stretch-TODO-overlays and image seperate (2 Tiffs or 2 H5 or 1 of each, but need to rebuild IOC for that)
+
+
+###  #TODOpmab 2nd priority - STOLEN FROM SIX 21-areadetector.py --
+# class StandardProsilica(SingleTrigger, ProsilicaDetector):
+#     def __init__(self,*args,**kwargs):
+#         super().__init__(*args,**kwargs)
+
+#         for n in [1, 5]:
+#             stats = getattr(self, f'stats{n}')
+#             stats.kind |= Kind.normal
+#             stats.total.kind = Kind.hinted
+        
+#     #image = Cpt(ImagePlugin, 'image1:')
+#     stats1 = Cpt(StatsPlugin, 'Stats1:')
+#     stats2 = Cpt(StatsPlugin, 'Stats2:')
+#     stats3 = Cpt(StatsPlugin, 'Stats3:')
+#     stats4 = Cpt(StatsPlugin, 'Stats4:')
+#     stats5 = Cpt(StatsPlugin, 'Stats5:')
+#     #trans1 = Cpt(TransformPlugin, 'Trans1:')
+#     roi1 = Cpt(ROIPlugin, 'ROI1:')
+#     roi2 = Cpt(ROIPlugin, 'ROI2:')
+#     roi3 = Cpt(ROIPlugin, 'ROI3:')
+#     roi4 = Cpt(ROIPlugin, 'ROI4:')
+#     #proc1 = Cpt(ProcessPlugin, 'Proc1:')
+
+# #TODOpmab 2nd priority - STOLEN FROM SIX 21-areadetector.py -- but we don't ever change ROIs, but we would want the ROIs to 
+# be exactly the same metadata structure as FCCD.  This looks like the same (fccd.roi1.size.x )
+# class StandardProsilicaROI(StandardProsilica):
+#     '''
+#     A class that is used to add the attributes 'roi_enable', 'roi_set', 'roi_read' and the group ('roiN_minM', roiN_sizeM) 
+#     where N is 1-4 and M is x,y or z. to a camera with the roi plugin enabled.
+#     '''    
+
+#     def __init__(self,*args,**kwargs):
+#         super().__init__(*args,**kwargs)
+        
+#         for i in range(1, 4):
+#             for axis in ['x','y','z']:
+#                 setattr(self,'roi{}_min{}'.format(i, axis),
+#                         getattr(self, 'roi' + str(i) + '.min_xyz.min_{}'.format(axis)))
+#                 setattr(self,'roi{}_size{}'.format(i, axis),
+#                         getattr(self, 'roi' + str(i) + '.size.{}'.format(axis)))
+    
+    
+#     def roi_set(self,min_x, size_x, min_y, size_y, min_z=None, size_z=None, roi_num=1):
+#         ''' 
+#         An attribute function for the camera that allows the user to set an roi size and position. setting
+#         any of the values to 'None' means they are ignored(left as is).
+#         TODO add a 'set' method tothe ROIPlugin class to supprt 'cam.roi1.set(...)'
+            
+#         Parameters
+#         ----------
+#         min_x : integer
+#             The pixel number position of the left edge of the ROI.
+#         size_x : integer
+#             The pixel number width of the ROI.
+#         min_y : integer
+#             The pixel number position of the bottom edge of the ROI.
+#         size_y : integer
+#             The pixel number height of the ROI.
+#         min_z : integer,optional
+#             The pixel number minima of the intensity region of the ROI.
+#         size_z : integer,optional
+#             The pixel number maxima of the intensity region of the ROI.
+#         roi_num : integer, optional
+#             The roi number to act, default is 1 and it must be 1,2,3 or 4.        
+#         '''
+
+#         if min_x is not None:
+#             getattr(self, 'roi' + str(roi_num) + '.min_xyz.min_x').put(min_x)
+#         if size_x is not None:
+#             getattr(self, 'roi' + str(roi_num) + '.size.x').put(size_x)
+#         if min_y is not None:
+#             getattr(self, 'roi' + str(roi_num) + '.min_xyz.min_y').put(min_y)
+#         if size_y is not None:
+#             getattr(self, 'roi' + str(roi_num) + '.size.y').put(size_y)
+#         if min_z is not None:
+#             getattr(self, 'roi' + str(roi_num) + '.min_xyz.min_z').put(min_z)
+#         if size_z is not None:
+#             getattr(self, 'roi' + str(roi_num) + '.size.z').put(size_z)
+
+#     def roi_read(self, roi_num=1):
+#         ''' 
+#         An attribute function for the camera that allows the user to read the current values of  
+#         an roi size and position.
+#         Usage hints: to extract a specific value use "cam_name.roi_read()['keyword']" where 'keyword'
+#         is min_x, size_x, min_y, size_y, min_z, size_z or status.        
+            
+#         Parameters
+#         ----------
+        
+#         roi_num : integer, optional
+#             The roi number to act, default is 1 and it must be 1,2,3 or 4.  
+        
+#         roi_dict : output
+#             A dictionary which gives the current roi positions in the form: 
+#             {'min_x':value,'size_x':value,'min_y':value,'size_y':value,'min_z':value,'size_z':value,'status':status}
+#         '''
+#         roi_dict={'min_x' : getattr(self, 'roi' + str(roi_num) + '.min_xyz.min_x').get(),
+#                   'size_x': getattr(self, 'roi' + str(roi_num) + '.size.x').get(),
+#                   'min_y': getattr(self, 'roi' + str(roi_num) + '.min_xyz.min_y').get(),
+#                   'size_y': getattr(self, 'roi' + str(roi_num) + '.size.y').get(),
+#                   'min_z' : getattr(self, 'roi' + str(roi_num) + '.min_xyz.min_z').get(),
+#                   'size_z' : getattr(self, 'roi' + str(roi_num) + '.size.z').get(),
+#                   'status' : getattr(self, 'roi' + str(roi_num) + '.enable').get()}
+        
+#         return roi_dict
+
+#     def roi_enable(self, status, roi_num=1):
+#         ''' 
+#         An attribute function for the camera that allows the user to enable or disable an ROI.
+      
+            
+#         Parameters
+#         ----------
+        
+#         status : string
+#             The string indicating the status to set for the ROI, must be 'Enable' or 'Disable'.
+        
+#         roi_num : integer, optional
+#             The roi number to act, default is 1 and it must be 1,2,3 or 4.    
+#         '''   
+
+#         if status is 'Enable' or status is 'Disable':
+#             getattr(self, 'roi' + str(roi_num) + '.enablE').set(status)
+#         else:
+#             raise RuntimeError('in roi_enable status must be Enable or Disable')
+
+ #TODOpmab 2nd priority - STOLEN FROM SIX 21-areadetector.py --
+# class StandardProsilicaSaving(StandardProsilicaROI):   ##TODOpmab SIX ORIGINAL to save, at one time only save or ROI so don't trust this works
+#     hdf5 = Cpt(HDF5PluginWithFileStore,
+#               suffix='HDF1:',
+#               write_path_template='/nsls2/data/csx/legacy/prosilica_data/%Y/%m/%d',
+#               root='/nsls2/data/csx/legacy')
+
+
+### LOOKS LIKE FCCD STUFF STARTS HERE
 class HDF5PluginSWMR(HDF5Plugin):
     swmr_active = Cpt(EpicsSignalRO, 'SWMRActive_RBV')
     swmr_mode = Cpt(EpicsSignalWithRBV, 'SWMRMode')

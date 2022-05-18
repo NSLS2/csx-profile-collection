@@ -17,7 +17,8 @@ from ..devices.areadetector import (StandardCam, NoStatsCam,
                                     ProductionCamStandard,
                                     ProductionCamTriggered,
                                     StageOnFirstTrigger,
-                                    MonitorStatsCam)
+                                    MonitorStatsCam,
+                                    StandardProsilicaSaving) #TODOpmab - added to try to save (inspired from SIX)
 
 from ..startup import db
 
@@ -45,38 +46,53 @@ mcs = StruckSIS3820MCS('XF:23ID1-ES{Sclr:1}', name='mcs')
 # Diagnostic Prosilica Cameras
 #
 
+diag2 = StandardCam('XF:23ID1-BI{Diag:2-Cam:1}', name='diag2')#TODOpmab optional imagesave w/ stats always
+_setup_stats(diag2) #diamond diagnostic
+
 ## 20180726 needed to comment due to IOC1 problems
-#slt1_cam = StandardCam('XF:23ID1-BI{Slt:1-Cam:1}', name='slt1_cam')
-#
-#diag3 = StandardCam('XF:23ID1-BI{Diag:3-Cam:1}', name='diag3')
-#_setup_stats(diag3)
+slt1_cam = StandardCam('XF:23ID1-BI{Slt:1-Cam:1}', name='slt1_cam')
+_setup_stats(slt1_cam)
+
+diag3 = StandardCam('XF:23ID1-BI{Diag:3-Cam:1}', name='diag3')
+_setup_stats(diag3)
 
 diag6 = MonitorStatsCam('XF:23ID1-BI{Diag:6-Cam:1}', name='diag6') #TODO testing
 #diag6 = NoStatsCam('XF:23ID1-BI{Diag:6-Cam:1}', name='diag6') #TODO revert above test
 
-## 20180726 needed to comment due to IOC1 problems
+## 20180726 needed to comment due to IOC1 problems - probably ok now, but not used.
 #cube_beam = StandardCam('XF:23ID1-BI{Diag:5-Cam:1}', name='cube_beam')
 #_setup_stats(cube_beam)
 
 dif_beam = StandardCam('XF:23ID1-ES{Dif-Cam:Beam}', name='dif_beam')
 _setup_stats(dif_beam)
 
-# Setup on 2018/03/16 for correlating fCCD and sample position
-#dif_cam1 = StandardCam('XF:23ID1-ES{Dif-Cam:1}', name='dif_cam1')
-#_setup_stats(dif_cam1)
+# Setup on 2018/03/16 for correlating fCCD and sample position - worked 
+# TODO  WOULD LIKE TO SAVE IMAGES and OVERLAYS, DON"T NEED STATS to take pictures of sample/optics
+dif_cam1 = StandardCam('XF:23ID1-ES{Dif-Cam:1}', name='dif_cam1' )#TODOpmab priority2 - imags/overlays no stats
+#_setup_stats(dif_cam1) #comment to disable
+dif_cam1image = StandardProsilicaSaving('XF:23ID1-ES{Dif-Cam:1}', name='dif_cam1image' )#TODOpmab priority2 - andi quick SIXcopy
+dif_cam1image.hdf5.kind = 'normal'
+dif_cam2 = StandardCam('XF:23ID1-ES{Dif-Cam:2}', name='dif_cam2')#TODOpmab priority2 - imags/overlays no stats
+#_setup_stats(dif_cam2) #comment to disable
+dif_cam3 = StandardCam('XF:23ID1-ES{Dif-Cam:3}', name='dif_cam3')#TODOpmab priority2 - imags/overlays no stats
+#_setup_stats(dif_cam3)#comment to disable
 
-#dif_cam2 = StandardCam('XF:23ID1-ES{Dif-Cam:2}', name='dif_cam2')
-#_setup_stats(dif_cam2)
-#
-#dif_cam3 = StandardCam('XF:23ID1-ES{Dif-Cam:3}', name='dif_cam3')
-#_setup_stats(dif_cam3)
+## 20201219 - Machine studies for source characterization #TODO save also images like real detector
+fs_cam = StandardCam('XF:23IDA-BI:1{FS:1-Cam:1}', name='fs_cam') #TODOpmab optional imagesave w/ stats always
 
-## 20201219 - Machine studies for source characterization
-fs_cam = StandardCam('XF:23IDA-BI:1{FS:1-Cam:1}', name='fs_cam')
+#TODOpmab-andi plugin and start IOC
+#bs_cam = StandardCam('XF:23ID1-BI{Diag:7-Cam:1}', name='bs_cam') #TODOpmab optional imagesave w/ stats always
+#_setup_stats(bs_cam)
 
-#
+## SWITCH AS NEEDED per experiment
+pa_cam = StandardCam('XF:23ID1-BI{Diag:8-Cam:1}', name='pa_cam') #TODOpmab optional imagesave w/ stats always
+_setup_stats(pa_cam)
+#diag6new = MonitorStatsCam('XF:23ID1-BI{Diag:8-Cam:1}', name='diag6new') #TODO testing
+##diag6new = NoStatsCam('XF:23ID1-BI{Diag:8-Cam:1}', name='diag6new') #TODO revert above test
+
+#TODOpmab-andi to clean up and add all hinted stats the we normally hint for prosilicas (dif_beam, etc)
+
 # FastCCD
-#
 
 fccd = StageOnFirstTrigger('XF:23ID1-ES{FCCD}',
 #fccd = ProductionCamTriggered('XF:23ID1-ES{FCCD}',
@@ -112,6 +128,7 @@ configuration_attrs_list = ['cam.acquire_time',
                             'fccd1.row_offset',
                             'fccd1.overscan_cols',
                             ]
+
 
 roi_params = ['.min_xyz', '.min_xyz.min_y', '.min_xyz.min_x',
               '.size', '.size.y', '.size.x', '.name_']
