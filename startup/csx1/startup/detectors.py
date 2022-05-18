@@ -18,7 +18,7 @@ from ..devices.areadetector import (StandardCam, NoStatsCam,
                                     ProductionCamTriggered,
                                     StageOnFirstTrigger,
                                     MonitorStatsCam,
-                                    StandardProsilicaSaving) #TODOpmab - added to try to save (inspired from SIX)
+                                    StandardProsilicaWithHDF5) #TODOpmab - added to try to save (inspired from SIX)
 
 from ..startup import db
 
@@ -64,7 +64,7 @@ diag6 = MonitorStatsCam('XF:23ID1-BI{Diag:6-Cam:1}', name='diag6') #TODO testing
 #_setup_stats(cube_beam)
 
 dif_beam = StandardCam('XF:23ID1-ES{Dif-Cam:Beam}', name='dif_beam')
-dif_beam_hdf5 = StandardProsilicaSaving('XF:23ID1-ES{Dif-Cam:Beam}', name='dif_beam')
+dif_beam_hdf5 = StandardProsilicaWithHDF5('XF:23ID1-ES{Dif-Cam:Beam}', name='dif_beam')
 _setup_stats(dif_beam)
 _setup_stats(dif_beam_hdf5)
 # dif_beam.hdf5.kind = 'normal'
@@ -72,10 +72,10 @@ _setup_stats(dif_beam_hdf5)
 # TODO  WOULD LIKE TO SAVE IMAGES and OVERLAYS, DON"T NEED STATS to take pictures of sample/optics
 dif_cam1 = StandardCam('XF:23ID1-ES{Dif-Cam:1}', name='dif_cam1' )#TODOpmab priority2 - imags/overlays no stats
 #_setup_stats(dif_cam1) #comment to disable
-dif_cam1image = StandardProsilicaSaving('XF:23ID1-ES{Dif-Cam:1}', name='dif_cam1image' )#TODOpmab priority2 - andi quick SIXcopy
+dif_cam1image = StandardProsilicaWithHDF5('XF:23ID1-ES{Dif-Cam:1}', name='dif_cam1image' )#TODOpmab priority2 - andi quick SIXcopy
 #_setup_stats(dif_cam1image)
 dif_cam1image.hdf5.kind = 'normal'
-dif_cam2 = StandardProsilicaSaving('XF:23ID1-ES{Dif-Cam:2}', name='dif_cam2')#TODOpmab priority2 - imags/overlays no stats
+dif_cam2 = StandardProsilicaWithHDF5('XF:23ID1-ES{Dif-Cam:2}', name='dif_cam2')#TODOpmab priority2 - imags/overlays no stats
 #_setup_stats(dif_cam2) #comment to disable
 #dif_cam2.hdf5.kind = 'normal' #TODOpmab - H5 has bad image shape (frames, pix x, pix y, 3) - would 
 dif_cam3 = StandardCam('XF:23ID1-ES{Dif-Cam:3}', name='dif_cam3')#TODOpmab priority2 - imags/overlays no stats
