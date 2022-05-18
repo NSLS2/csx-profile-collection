@@ -79,6 +79,7 @@ class StandardProsilicaSaving(StandardCam):#TODOpmab just random guess by andi t
               #write_path_template='/nsls2/data/csx/legacy/prosilica_data/%Y/%m/%d',##TODOpmab - fix path if this works
               write_path_template='/nsls2/data/csx/legacy/datajunk/%Y/%m/%d',
               root='/nsls2/data/csx/legacy')
+        self.hdf5.kind = "normal"
         ##TODOpmab - priority2, if works then stretch-TODO-overlays and image seperate (2 Tiffs or 2 H5 or 1 of each, but need to rebuild IOC for that)
 
     def disable_hdf5(self):
