@@ -69,12 +69,20 @@ class HDF5PluginWithFileStorePlain(HDF5Plugin, FileStoreHDF5IterativeWrite): ##S
 
 #class StandardProsilicaSaving(StandardProsilica): #TODOpmab original from SIX, but moved up and removed SIX custom StandardProsilica
 class StandardProsilicaSaving(StandardCam):#TODOpmab just random guess by andi to save for dif_cam1,2,3 will disable rois
-    hdf5 = Cpt(HDF5PluginWithFileStorePlain,
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.enable_hdf5()
+
+    def enable_hdf5(self):
+        self.hdf5 = Cpt(HDF5PluginWithFileStorePlain,
               suffix='HDF1:',
               #write_path_template='/nsls2/data/csx/legacy/prosilica_data/%Y/%m/%d',##TODOpmab - fix path if this works
               write_path_template='/nsls2/data/csx/legacy/datajunk/%Y/%m/%d',
               root='/nsls2/data/csx/legacy')
-              ##TODOpmab - priority2, if works then stretch-TODO-overlays and image seperate (2 Tiffs or 2 H5 or 1 of each, but need to rebuild IOC for that)
+        ##TODOpmab - priority2, if works then stretch-TODO-overlays and image seperate (2 Tiffs or 2 H5 or 1 of each, but need to rebuild IOC for that)
+
+    def disable_hdf5(self):
+        self.hdf5 = None
 
 
 ###  #TODOpmab 2nd priority - STOLEN FROM SIX 21-areadetector.py --
