@@ -75,7 +75,7 @@ _setup_stats(dif_beam_hdf5)
 #_setup_stats(dif_cam2) #comment to disable
 dif_cam1 = StandardProsilicaWithTIFF('XF:23ID1-ES{Dif-Cam:1}', name='dif_cam1')
 dif_cam2 = StandardProsilicaWithTIFF('XF:23ID1-ES{Dif-Cam:2}', name='dif_cam2')
-dif_cam3 = StandardProsilicaWithTIFF('XF:23ID1-ES{Dif-Cam:3}', name='dif_cam3')
+dif_cam3 = StandardProsilicaWithTIFF('XF:23ID1-ES{Dif-Cam:3}', name='dif_cam3')##TODO think how to fix with trans plugin
 
 ## 20201219 - Machine studies for source characterization #TODO save also images like real detector
 fs_cam = StandardCam('XF:23IDA-BI:1{FS:1-Cam:1}', name='fs_cam') #TODOpmab optional imagesave w/ stats always
