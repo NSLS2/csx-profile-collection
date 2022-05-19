@@ -36,6 +36,7 @@ class StandardCam(SingleTrigger, AreaDetector):#TODO is there something more sta
     roi4 = Cpt(ROIPlugin, 'ROI4:')
     #proc1 = Cpt(ProcessPlugin, 'Proc1:')
     #trans1 = Cpt(TransformPlugin, 'Trans1:')
+    over1 = Cpt(OverlayPlugin, 'Over1:') ##ADDED TO TRY for crosshairs in tiff
 
 class NoStatsCam(SingleTrigger, AreaDetector):
     pass
