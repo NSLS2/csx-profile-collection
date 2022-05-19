@@ -64,17 +64,14 @@ diag6 = MonitorStatsCam('XF:23ID1-BI{Diag:6-Cam:1}', name='diag6') #TODO testing
 #_setup_stats(cube_beam)
 
 dif_beam = StandardCam('XF:23ID1-ES{Dif-Cam:Beam}', name='dif_beam')
-dif_beam_hdf5 = StandardProsilicaWithHDF5('XF:23ID1-ES{Dif-Cam:Beam}', name='dif_beam')
+dif_beam_hdf5 = StandardProsilicaWithHDF5('XF:23ID1-ES{Dif-Cam:Beam}', name='dif_beam_hdf5') #TODO replace with DSSI project
 _setup_stats(dif_beam)
 _setup_stats(dif_beam_hdf5)
-# dif_beam.hdf5.kind = 'normal'
+dif_beam_hdf5.hdf5.kind = 'normal'
 # Setup on 2018/03/16 for correlating fCCD and sample position - worked 
 # TODO  WOULD LIKE TO SAVE IMAGES and OVERLAYS, DON"T NEED STATS to take pictures of sample/optics
 dif_cam1 = StandardCam('XF:23ID1-ES{Dif-Cam:1}', name='dif_cam1' )#TODOpmab priority2 - imags/overlays no stats
 #_setup_stats(dif_cam1) #comment to disable
-dif_cam1image = StandardProsilicaWithHDF5('XF:23ID1-ES{Dif-Cam:1}', name='dif_cam1image' )#TODOpmab priority2 - andi quick SIXcopy
-#_setup_stats(dif_cam1image)
-dif_cam1image.hdf5.kind = 'normal'
 dif_cam2 = StandardProsilicaWithHDF5('XF:23ID1-ES{Dif-Cam:2}', name='dif_cam2')#TODOpmab priority2 - imags/overlays no stats
 #_setup_stats(dif_cam2) #comment to disable
 #dif_cam2.hdf5.kind = 'normal' #TODOpmab - H5 has bad image shape (frames, pix x, pix y, 3) - would 
@@ -91,6 +88,10 @@ fs_cam = StandardCam('XF:23IDA-BI:1{FS:1-Cam:1}', name='fs_cam') #TODOpmab optio
 ## SWITCH AS NEEDED per experiment
 pa_cam = StandardCam('XF:23ID1-BI{Diag:8-Cam:1}', name='pa_cam') #TODOpmab optional imagesave w/ stats always
 _setup_stats(pa_cam)
+pa_cam_hdf5 = StandardProsilicaWithHDF5('XF:23ID1-BI{Diag:8-Cam:1}', name='pa_cam_hdf5') #TODO replace with DSSI project
+_setup_stats(pa_cam)
+_setup_stats(pa_cam_hdf5)
+pa_cam_hdf5.hdf5.kind = 'normal'
 #diag6new = MonitorStatsCam('XF:23ID1-BI{Diag:8-Cam:1}', name='diag6new') #TODO testing
 ##diag6new = NoStatsCam('XF:23ID1-BI{Diag:8-Cam:1}', name='diag6new') #TODO revert above test
 
