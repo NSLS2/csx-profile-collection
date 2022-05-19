@@ -1,10 +1,10 @@
 from ophyd import (EpicsScaler, EpicsSignal, EpicsSignalRO, Device,
                    SingleTrigger, HDF5Plugin, ImagePlugin, StatsPlugin,
-                   ROIPlugin, TransformPlugin, OverlayPlugin, ProsilicaDetector)
+                   ROIPlugin, TransformPlugin, OverlayPlugin, ProsilicaDetector, TIFFPlugin)
 
 from ophyd.areadetector.cam import AreaDetectorCam
 from ophyd.areadetector.detectors import DetectorBase
-from ophyd.areadetector.filestore_mixins import FileStoreHDF5IterativeWrite
+from ophyd.areadetector.filestore_mixins import FileStoreHDF5IterativeWrite, FileStoreTIFFIterativeWrite
 from ophyd.areadetector import ADComponent, EpicsSignalWithRBV
 from ophyd.areadetector.plugins import PluginBase, ProcessPlugin
 from ophyd import Component as Cpt
@@ -23,8 +23,8 @@ import numpy as np
 
 from .stats_plugin import StatsPluginCSX
 
-
-class StandardCam(SingleTrigger, AreaDetector):#TODOpmab is there somethine more standard for prosilica? seems only used on prosilica. this does stats, but no image saving (unsure if easy to configure or not and enable/disable)
+##TODO why AreaDetector and not ProsilicaDetector for StandardCam Class below
+class StandardCam(SingleTrigger, AreaDetector):#TODO is there something more standard for prosilica? seems only used on prosilica. this does stats, but no image saving (unsure if easy to configure or not and enable/disable)
     stats1 = Cpt(StatsPlugin, 'Stats1:')
     stats2 = Cpt(StatsPlugin, 'Stats2:')
     stats3 = Cpt(StatsPlugin, 'Stats3:')
@@ -37,18 +37,17 @@ class StandardCam(SingleTrigger, AreaDetector):#TODOpmab is there somethine more
     #proc1 = Cpt(ProcessPlugin, 'Proc1:')
     #trans1 = Cpt(TransformPlugin, 'Trans1:')
 
-
 class NoStatsCam(SingleTrigger, AreaDetector):
     pass
 
 
-class MonitorStatsCam(SingleTrigger, AreaDetector): #TODO does this work or are we hacking EpicsSignals in custom plans
+class MonitorStatsCam(SingleTrigger, AreaDetector): #TODO does this subscribe/unsubsribe work or are we hacking EpicsSignals in custom plans
     stats1 = Cpt(StatsPlugin, "Stats1:")
     roi1 = Cpt(ROIPlugin, "ROI1:")
     proc1 = Cpt(ProcessPlugin, "Proc1:")
 
     def subscribe(self, *args, **kwargs):
-        return self.stast1.cenx.subscribe(*args, **kwargs)
+        return self.stast1.cenx.subscribe(*args, **kwargs) #TODO if this works, then add stats1.ceny too.
 
     def unbuscribe(self, *args, **kwargs):
         return self.stast1.cenx.unsubscribe(*args, **kwargs)
@@ -88,6 +87,42 @@ class StandardProsilicaWithHDF5(StandardCam):
 
 
 
+class TIFFPluginWithFileStore(TIFFPlugin, FileStoreTIFFIterativeWrite): #RIPPED OFF FROM CHX because mutating H5 has wrong shape for color img
+    """Add this as a component to detectors that write TIFFs."""
+    def describe(self):
+        ret = super().describe()
+        key = self.parent._image_name
+        color_mode = self.parent.cam.color_mode.get(as_string=True)
+        if color_mode == 'Mono':
+            ret[key]['shape'] = [
+                self.parent.cam.num_images.get(),
+                self.array_size.height.get(),
+                self.array_size.width.get()
+                ]
+       
+        elif color_mode in ['RGB1', 'Bayer']:
+            ret[key]['shape'] = [self.parent.cam.num_images.get(), *self.array_size.get()]
+        else:
+            raise RuntimeError("SHould never be here")
+        
+        cam_dtype = self.parent.cam.data_type.get(as_string=True)
+        type_map = {'UInt8': '|u1', 'UInt16': '<u2', 'Float32':'<f4', "Float64":'<f8'}
+        if cam_dtype in type_map:
+            ret[key].setdefault('dtype_str', type_map[cam_dtype])
+
+        return ret
+
+
+class StandardProsilicaWithTIFF(StandardCam): #RIPPED OFF FROM CHX and not using their custom StandardProcilica class (StandardCam here)
+    tiff = Cpt(TIFFPluginWithFileStore,
+               suffix='TIFF1:',              
+               #write_path_template='/nsls2/data/csx/legacy/prosilica_data/%Y/%m/%d',##TODOpmab - fix path if this works
+               write_path_template='/nsls2/data/csx/legacy/datajunk/%Y/%m/%d',
+               root='/nsls2/data/csx/legacy')
+    def __init__(self, *args, **kwargs): #TODOandi-understand why must be self, #TODOclaudio should we do this for stats?
+        super().__init__(*args, **kwargs)
+        self.tiff.kind = "normal"
+    
 
 ### LOOKS LIKE FCCD STUFF STARTS HERE
 class HDF5PluginSWMR(HDF5Plugin):

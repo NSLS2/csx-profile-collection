@@ -18,7 +18,7 @@ from ..devices.areadetector import (StandardCam, NoStatsCam,
                                     ProductionCamTriggered,
                                     StageOnFirstTrigger,
                                     MonitorStatsCam,
-                                    StandardProsilicaWithHDF5) #TODOpmab - added to try to save (inspired from SIX)
+                                    StandardProsilicaWithHDF5, StandardProsilicaWithTIFF) #TODOpmab - added to try to save (inspired from SIX)
 
 from ..startup import db
 
@@ -67,16 +67,15 @@ dif_beam = StandardCam('XF:23ID1-ES{Dif-Cam:Beam}', name='dif_beam')
 dif_beam_hdf5 = StandardProsilicaWithHDF5('XF:23ID1-ES{Dif-Cam:Beam}', name='dif_beam_hdf5') #TODO replace with DSSI project
 _setup_stats(dif_beam)
 _setup_stats(dif_beam_hdf5)
-dif_beam_hdf5.hdf5.kind = 'normal'
+
+
 # Setup on 2018/03/16 for correlating fCCD and sample position - worked 
-# TODO  WOULD LIKE TO SAVE IMAGES and OVERLAYS, DON"T NEED STATS to take pictures of sample/optics
-dif_cam1 = StandardCam('XF:23ID1-ES{Dif-Cam:1}', name='dif_cam1' )#TODOpmab priority2 - imags/overlays no stats
-#_setup_stats(dif_cam1) #comment to disable
-dif_cam2 = StandardProsilicaWithHDF5('XF:23ID1-ES{Dif-Cam:2}', name='dif_cam2')#TODOpmab priority2 - imags/overlays no stats
+# DON'T NEED STATS to take pictures of sample/optics
+#dif_cam1 = StandardCam('XF:23ID1-ES{Dif-Cam:1}', name='dif_cam1' )
 #_setup_stats(dif_cam2) #comment to disable
-#dif_cam2.hdf5.kind = 'normal' #TODOpmab - H5 has bad image shape (frames, pix x, pix y, 3) - would 
-dif_cam3 = StandardCam('XF:23ID1-ES{Dif-Cam:3}', name='dif_cam3')#TODOpmab priority2 - imags/overlays no stats
-#_setup_stats(dif_cam3)#comment to disable
+dif_cam1 = StandardProsilicaWithTIFF('XF:23ID1-ES{Dif-Cam:1}', name='dif_cam1')
+dif_cam2 = StandardProsilicaWithTIFF('XF:23ID1-ES{Dif-Cam:2}', name='dif_cam2')
+dif_cam3 = StandardProsilicaWithTIFF('XF:23ID1-ES{Dif-Cam:3}', name='dif_cam3')
 
 ## 20201219 - Machine studies for source characterization #TODO save also images like real detector
 fs_cam = StandardCam('XF:23IDA-BI:1{FS:1-Cam:1}', name='fs_cam') #TODOpmab optional imagesave w/ stats always
@@ -85,14 +84,15 @@ fs_cam = StandardCam('XF:23IDA-BI:1{FS:1-Cam:1}', name='fs_cam') #TODOpmab optio
 #bs_cam = StandardCam('XF:23ID1-BI{Diag:7-Cam:1}', name='bs_cam') #TODOpmab optional imagesave w/ stats always
 #_setup_stats(bs_cam)
 
-## SWITCH AS NEEDED per experiment
-pa_cam = StandardCam('XF:23ID1-BI{Diag:8-Cam:1}', name='pa_cam') #TODOpmab optional imagesave w/ stats always
-_setup_stats(pa_cam)
-pa_cam_hdf5 = StandardProsilicaWithHDF5('XF:23ID1-BI{Diag:8-Cam:1}', name='pa_cam_hdf5') #TODO replace with DSSI project
-_setup_stats(pa_cam)
-_setup_stats(pa_cam_hdf5)
-pa_cam_hdf5.hdf5.kind = 'normal'
-#diag6new = MonitorStatsCam('XF:23ID1-BI{Diag:8-Cam:1}', name='diag6new') #TODO testing
+### SWITCH AS NEEDED per experiment
+### OPT1
+#pa_cam = StandardCam('XF:23ID1-BI{Diag:8-Cam:1}', name='pa_cam') #TODOpmab optional imagesave w/ stats always
+#_setup_stats(pa_cam)
+#pa_cam_hdf5 = StandardProsilicaWithHDF5('XF:23ID1-BI{Diag:8-Cam:1}', name='pa_cam_hdf5') #TODO replace with DSSI project
+#_setup_stats(pa_cam)
+#_setup_stats(pa_cam_hdf5)
+### OPT2
+diag6new = MonitorStatsCam('XF:23ID1-BI{Diag:8-Cam:1}', name='diag6new') #TODO testing
 ##diag6new = NoStatsCam('XF:23ID1-BI{Diag:8-Cam:1}', name='diag6new') #TODO revert above test
 
 #TODOpmab-andi to clean up and add all hinted stats the we normally hint for prosilicas (dif_beam, etc)
@@ -142,5 +142,7 @@ configuration_attrs_list.extend(['roi' + str(i) + string for i in range(1,5) for
 for attr in configuration_attrs_list:
     getattr(fccd, attr).kind='config'
 
-
 _setup_stats(fccd)
+
+# for attr in configuration_attrs_list:
+#     getattr(dif_beam_hdf5, attr).kind='config'
