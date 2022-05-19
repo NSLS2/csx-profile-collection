@@ -139,10 +139,15 @@ roi_params = ['.min_xyz', '.min_xyz.min_y', '.min_xyz.min_x',
               '.size', '.size.y', '.size.x', '.name_']
 configuration_attrs_list.extend(['roi' + str(i) + string for i in range(1,5) for string in roi_params])
 
+##TODO make roi config attrs into generic function like _setup_stats so all areadetectors can have roi coordinates
 for attr in configuration_attrs_list:
     getattr(fccd, attr).kind='config'
-
+fccd.configuration_attrs.extend(['roi1', 'roi2', 'roi3','roi4'])
 _setup_stats(fccd)
 
-# for attr in configuration_attrs_list:
-#     getattr(dif_beam_hdf5, attr).kind='config'
+
+configuration_attrs_list = []                        
+configuration_attrs_list.extend(['roi' + str(i) + string for i in range(1,5) for string in roi_params])
+for attr in configuration_attrs_list:
+    getattr(dif_beam_hdf5, attr).kind='config'
+dif_beam_hdf5.configuration_attrs.extend(['roi1', 'roi2', 'roi3','roi4'])

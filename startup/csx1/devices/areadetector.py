@@ -79,8 +79,8 @@ class HDF5PluginWithFileStorePlain(HDF5Plugin, FileStoreHDF5IterativeWrite): ##S
 class StandardProsilicaWithHDF5(StandardCam):
     hdf5 = Cpt(HDF5PluginWithFileStorePlain,
               suffix='HDF1:',
-              #write_path_template='/nsls2/data/csx/legacy/prosilica_data/%Y/%m/%d',##TODOpmab - fix path if this works
-              write_path_template='/nsls2/data/csx/legacy/datajunk/%Y/%m/%d',
+              write_path_template='/nsls2/data/csx/legacy/prosilica_data/%Y/%m/%d',##TODOpmab - fix path if this works
+              #write_path_template='/nsls2/data/csx/legacy/datajunk/%Y/%m/%d', ###JUNK
               root='/nsls2/data/csx/legacy')
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -117,8 +117,8 @@ class TIFFPluginWithFileStore(TIFFPlugin, FileStoreTIFFIterativeWrite): #RIPPED 
 class StandardProsilicaWithTIFF(StandardCam): #RIPPED OFF FROM CHX and not using their custom StandardProcilica class (StandardCam here)
     tiff = Cpt(TIFFPluginWithFileStore,
                suffix='TIFF1:',              
-               #write_path_template='/nsls2/data/csx/legacy/prosilica_data/%Y/%m/%d',##TODOpmab - fix path if this works
-               write_path_template='/nsls2/data/csx/legacy/datajunk/%Y/%m/%d',
+               write_path_template='/nsls2/data/csx/legacy/prosilica_data/%Y/%m/%d',##TODOpmab - fix path if this works
+               #write_path_template='/nsls2/data/csx/legacy/datajunk/%Y/%m/%d', ##JUNK TO DELETE
                root='/nsls2/data/csx/legacy')
     def __init__(self, *args, **kwargs): #TODOandi-understand why must be self, #TODOclaudio should we do this for stats?
         super().__init__(*args, **kwargs)
