@@ -27,13 +27,13 @@ def _setup_stats(cam_in):
         cam_in.read_attrs.append(k)
         getattr(cam_in, k).read_attrs = ['total']
 
-#TODO add to plugin
-diag6_pid_threshold = EpicsSignal('XF:23ID1-BI{Diag:6-Cam:1}Stats1:CentroidThreshold',
-        name = 'diag6_pid_threshold')
-diag6new_pid_threshold = EpicsSignal('XF:23ID1-BI{Diag:8-Cam:1}Stats1:CentroidThreshold',
-        name = 'diag6new_pid_threshold')
+# #TODO add to plugin
+# diag6_pid_threshold = EpicsSignal('XF:23ID1-BI{Diag:6-Cam:1}Stats1:CentroidThreshold',
+#         name = 'diag6_pid_threshold')
+# diag6new_pid_threshold = EpicsSignal('XF:23ID1-BI{Diag:8-Cam:1}Stats1:CentroidThreshold',
+#         name = 'diag6new_pid_threshold')
 
-#
+# #
 # Scalers both MCS and Standard
 #
 
