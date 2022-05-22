@@ -30,6 +30,8 @@ def _setup_stats(cam_in):
 #TODO add to plugin
 diag6_pid_threshold = EpicsSignal('XF:23ID1-BI{Diag:6-Cam:1}Stats1:CentroidThreshold',
         name = 'diag6_pid_threshold')
+diag6new_pid_threshold = EpicsSignal('XF:23ID1-BI{Diag:8-Cam:1}Stats1:CentroidThreshold',
+        name = 'diag6new_pid_threshold')
 
 #
 # Scalers both MCS and Standard
@@ -58,7 +60,8 @@ _setup_stats(diag3)
 
 diag6 = MonitorStatsCam('XF:23ID1-BI{Diag:6-Cam:1}', name='diag6') #TODO testing
 #diag6 = NoStatsCam('XF:23ID1-BI{Diag:6-Cam:1}', name='diag6') #TODO revert above test
-
+diag6_hdf5 = StandardProsilicaWithHDF5('XF:23ID1-BI{Diag:8-Cam:1}', name='diag6_hdf5') #TODO replace with DSSI project
+_setup_stats(diag6_hdf5)
 ## 20180726 needed to comment due to IOC1 problems - probably ok now, but not used.
 #cube_beam = StandardCam('XF:23ID1-BI{Diag:5-Cam:1}', name='cube_beam')
 #_setup_stats(cube_beam)
@@ -94,7 +97,8 @@ fs_cam = StandardCam('XF:23IDA-BI:1{FS:1-Cam:1}', name='fs_cam') #TODOpmab optio
 ### OPT2
 diag6new = MonitorStatsCam('XF:23ID1-BI{Diag:8-Cam:1}', name='diag6new') #TODO testing
 ##diag6new = NoStatsCam('XF:23ID1-BI{Diag:8-Cam:1}', name='diag6new') #TODO revert above test
-
+diag6new_hdf5 = StandardProsilicaWithHDF5('XF:23ID1-BI{Diag:8-Cam:1}', name='diag6new_hdf5') #TODO replace with DSSI project
+_setup_stats(diag6new_hdf5)
 #TODOpmab-andi to clean up and add all hinted stats the we normally hint for prosilicas (dif_beam, etc)
 
 # FastCCD

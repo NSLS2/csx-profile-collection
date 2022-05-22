@@ -48,10 +48,13 @@ class MonitorStatsCam(SingleTrigger, AreaDetector): #TODO does this subscribe/un
     proc1 = Cpt(ProcessPlugin, "Proc1:")
 
     def subscribe(self, *args, **kwargs):
-        return self.stast1.cenx.subscribe(*args, **kwargs) #TODO if this works, then add stats1.ceny too.
+        #TODO centroid.x was orignally cenx, neither work in substribing. - figure out later.
+        return self.stats1.centroid.x.subscribe(*args, **kwargs) #TODO if this works, then add stats1.ceny too.
+        return self.stast1.centroid.y.subscribe(*args, **kwargs) #TODO if this works, then add stats1.ceny too.
 
-    def unbuscribe(self, *args, **kwargs):
-        return self.stast1.cenx.unsubscribe(*args, **kwargs)
+    def unsubuscribe(self, *args, **kwargs):
+        return self.stats1.centroid.x.unsubscribe(*args, **kwargs)
+        return self.stats1.centroid.y.unsubscribe(*args, **kwargs)
 
 
 class HDF5PluginWithFileStorePlain(HDF5Plugin, FileStoreHDF5IterativeWrite): ##SOURCED FROM BELOW FROM FCCD WITH SWMR removed
