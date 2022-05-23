@@ -63,8 +63,8 @@ _setup_stats(diag3)
 diag6 = MonitorStatsCam('XF:23ID1-BI{Diag:6-Cam:1}', name='diag6') #TODO testing
 
 #diag6 = NoStatsCam('XF:23ID1-BI{Diag:6-Cam:1}', name='diag6') #TODO revert above test
-diag6.stats1.centroid_threshold.kind = 'config'
-#diag6.stats1.centroid_threshold.kind = 'config'
+#diag6.stats1.centroid_threshold.kind = 'normal' ## maybe can only subscribe diag6? ##TODOrecord_threshold_for_every_scan_and_PV_put_complete
+#diag6.stats1.kind = 'normal'
 diag6_hdf5 = StandardProsilicaWithHDF5('XF:23ID1-BI{Diag:6-Cam:1}', name='diag6_hdf5') #TODO replace with DSSI project
 #_setup_stats_cen(diag6_hdf5)
 ## 20180726 needed to comment due to IOC1 problems - probably ok now, but not used.
@@ -101,11 +101,10 @@ fs_cam = StandardCam('XF:23IDA-BI:1{FS:1-Cam:1}', name='fs_cam') #TODOpmab optio
 #_setup_stats(pa_cam_hdf5)
 ### OPT2
 diag6new = MonitorStatsCam('XF:23ID1-BI{Diag:8-Cam:1}', name='diag6new') #TODO testing
-diag6new.stats1.centroid_threshold.kind = 'config'
 ##diag6new = NoStatsCam('XF:23ID1-BI{Diag:8-Cam:1}', name='diag6new') #TODO revert above test
 diag6new_hdf5 = StandardProsilicaWithHDF5('XF:23ID1-BI{Diag:8-Cam:1}', name='diag6new_hdf5') #TODO replace with DSSI project
 #_setup_stats_cen(diag6new_hdf5)
-#TODOpmab-andi to clean up and add all hinted stats the we normally hint for prosilicas (dif_beam, etc)
+
 
 # FastCCD
 
