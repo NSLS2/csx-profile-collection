@@ -6,7 +6,7 @@ from ophyd.areadetector.cam import AreaDetectorCam
 from ophyd.areadetector.detectors import DetectorBase
 from ophyd.areadetector.filestore_mixins import FileStoreHDF5IterativeWrite, FileStoreTIFFIterativeWrite
 from ophyd.areadetector import ADComponent, EpicsSignalWithRBV
-from ophyd.areadetector.plugins import PluginBase, ProcessPlugin
+from ophyd.areadetector.plugins import PluginBase, ProcessPlugin, HDF5Plugin_V22
 from ophyd import Component as Cpt
 from ophyd.device import FormattedComponent as FCpt
 from ophyd import AreaDetector
@@ -54,9 +54,26 @@ class MonitorStatsCam(SingleTrigger, AreaDetector): #TODO does this subscribe/un
         return self.stast1.cenx.unsubscribe(*args, **kwargs)
 
 
-class HDF5PluginWithFileStorePlain(HDF5Plugin, FileStoreHDF5IterativeWrite): ##SOURCED FROM BELOW FROM FCCD WITH SWMR removed
-    # AD v2.2.0 (at least) does not have this. It is present in v1.9.1.
-    file_number_sync = None
+def update_describe_typing(dic, obj):
+    """
+    Function for updating dictionary result of `describe` to include better typing.
+    Previous defaults did not use `dtype_str` and simply described an image as an array.
+
+    Parameters
+    ==========
+    dic: dict
+        Return dictionary of describe method
+    obj: OphydObject
+        Instance of plugin
+    """
+    key = obj.parent._image_name
+    cam_dtype = obj.parent.cam.data_type.get(as_string=True)
+    type_map = {'UInt8': '|u1', 'UInt16': '<u2', 'Float32':'<f4', "Float64":'<f8'}
+    if cam_dtype in type_map:
+        dic[key].setdefault('dtype_str', type_map[cam_dtype])
+
+
+class HDF5PluginWithFileStorePlain(HDF5Plugin_V22, FileStoreHDF5IterativeWrite): ##SOURCED FROM BELOW FROM FCCD WITH SWMR removed
 
     def get_frames_per_point(self):
         return self.parent.cam.num_images.get()
@@ -68,11 +85,7 @@ class HDF5PluginWithFileStorePlain(HDF5Plugin, FileStoreHDF5IterativeWrite): ##S
 
     def describe(self):
         ret = super().describe()
-        key = self.parent._image_name
-        cam_dtype = self.parent.cam.data_type.get(as_string=True)
-        type_map = {'UInt8': '|u1', 'UInt16': '<u2', 'Float32':'<f4', "Float64":'<f8'}
-        if cam_dtype in type_map:
-            ret[key].setdefault('dtype_str', type_map[cam_dtype])
+        update_describe_typing(ret, self)
         return ret
 
 
@@ -104,14 +117,9 @@ class TIFFPluginWithFileStore(TIFFPlugin, FileStoreTIFFIterativeWrite): #RIPPED 
         elif color_mode in ['RGB1', 'Bayer']:
             ret[key]['shape'] = [self.parent.cam.num_images.get(), *self.array_size.get()]
         else:
-            raise RuntimeError("SHould never be here")
-        
-        cam_dtype = self.parent.cam.data_type.get(as_string=True)
-        type_map = {'UInt8': '|u1', 'UInt16': '<u2', 'Float32':'<f4', "Float64":'<f8'}
-        if cam_dtype in type_map:
-            ret[key].setdefault('dtype_str', type_map[cam_dtype])
-
-        return ret
+            raise RuntimeError(f"Parent camera color mode for TIFFPluginWithFileStore, {color_mode}, "
+                               f"not one of 'Mono', 'RGB1', nor 'Bayer'")
+        update_describe_typing(ret, self)
 
 
 class StandardProsilicaWithTIFF(StandardCam): #RIPPED OFF FROM CHX and not using their custom StandardProcilica class (StandardCam here)
