@@ -75,6 +75,12 @@ def update_describe_typing(dic, obj):
 
 class HDF5PluginWithFileStorePlain(HDF5Plugin_V22, FileStoreHDF5IterativeWrite): ##SOURCED FROM BELOW FROM FCCD WITH SWMR removed
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # In CSS help: "N < 0: Up to abs(N) new directory levels will be created"
+        self.stage_sigs.update({"create_directory": -3})
+        self.stage_sigs.move_to_end("create_directory", last=False)
+
     def get_frames_per_point(self):
         return self.parent.cam.num_images.get()
 
