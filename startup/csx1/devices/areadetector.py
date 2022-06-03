@@ -79,6 +79,7 @@ class HDF5PluginWithFileStorePlain(HDF5Plugin_V22, FileStoreHDF5IterativeWrite):
         super().__init__(*args, **kwargs)
         # In CSS help: "N < 0: Up to abs(N) new directory levels will be created"
         self.stage_sigs.update({"create_directory": -3})
+        # last=False turns move_to_end into move_to_start. Yes, it's silly.
         self.stage_sigs.move_to_end("create_directory", last=False)
 
     def get_frames_per_point(self):
