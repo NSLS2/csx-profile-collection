@@ -6,7 +6,7 @@ from ophyd.areadetector.cam import AreaDetectorCam
 from ophyd.areadetector.detectors import DetectorBase
 from ophyd.areadetector.filestore_mixins import FileStoreHDF5IterativeWrite, FileStoreTIFFIterativeWrite
 from ophyd.areadetector import ADComponent, EpicsSignalWithRBV
-from ophyd.areadetector.plugins import PluginBase, ProcessPlugin, HDF5Plugin_V22
+from ophyd.areadetector.plugins import PluginBase, ProcessPlugin, HDF5Plugin_V22, TIFFPlugin_V22
 from ophyd import Component as Cpt
 from ophyd.device import FormattedComponent as FCpt
 from ophyd import AreaDetector
@@ -107,7 +107,7 @@ class StandardProsilicaWithHDF5(StandardCam):
 
 
 
-class TIFFPluginWithFileStore(TIFFPlugin, FileStoreTIFFIterativeWrite): #RIPPED OFF FROM CHX because mutating H5 has wrong shape for color img
+class TIFFPluginWithFileStore(TIFFPlugin_V22, FileStoreTIFFIterativeWrite): #RIPPED OFF FROM CHX because mutating H5 has wrong shape for color img
     """Add this as a component to detectors that write TIFFs."""
     def describe(self):
         ret = super().describe()
@@ -126,6 +126,7 @@ class TIFFPluginWithFileStore(TIFFPlugin, FileStoreTIFFIterativeWrite): #RIPPED 
             raise RuntimeError(f"Parent camera color mode for TIFFPluginWithFileStore, {color_mode}, "
                                f"not one of 'Mono', 'RGB1', nor 'Bayer'")
         update_describe_typing(ret, self)
+        return ret
 
 
 class StandardProsilicaWithTIFF(StandardCam): #RIPPED OFF FROM CHX and not using their custom StandardProcilica class (StandardCam here)
