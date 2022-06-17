@@ -109,6 +109,14 @@ class StandardProsilicaWithHDF5(StandardCam):
 
 class TIFFPluginWithFileStore(TIFFPlugin_V22, FileStoreTIFFIterativeWrite): #RIPPED OFF FROM CHX because mutating H5 has wrong shape for color img
     """Add this as a component to detectors that write TIFFs."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # In CSS help: "N < 0: Up to abs(N) new directory levels will be created"
+        self.stage_sigs.update({"create_directory": -3})
+        # last=False turns move_to_end into move_to_start. Yes, it's silly.
+        self.stage_sigs.move_to_end("create_directory", last=False)
+
     def describe(self):
         ret = super().describe()
         key = self.parent._image_name
