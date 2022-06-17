@@ -1,12 +1,12 @@
 from ophyd import (EpicsScaler, EpicsSignal, EpicsSignalRO, Device,
                    SingleTrigger, HDF5Plugin, ImagePlugin, StatsPlugin,
-                   ROIPlugin, TransformPlugin, OverlayPlugin)
+                   ROIPlugin, TransformPlugin, OverlayPlugin, ProsilicaDetector, TIFFPlugin)
 
 from ophyd.areadetector.cam import AreaDetectorCam
 from ophyd.areadetector.detectors import DetectorBase
-from ophyd.areadetector.filestore_mixins import FileStoreHDF5IterativeWrite
+from ophyd.areadetector.filestore_mixins import FileStoreHDF5IterativeWrite, FileStoreTIFFIterativeWrite
 from ophyd.areadetector import ADComponent, EpicsSignalWithRBV
-from ophyd.areadetector.plugins import PluginBase, ProcessPlugin
+from ophyd.areadetector.plugins import PluginBase, ProcessPlugin, HDF5Plugin_V22, TIFFPlugin_V22
 from ophyd import Component as Cpt
 from ophyd.device import FormattedComponent as FCpt
 from ophyd import AreaDetector
@@ -23,8 +23,8 @@ import numpy as np
 
 from .stats_plugin import StatsPluginCSX
 
-
-class StandardCam(SingleTrigger, AreaDetector):
+##TODO why AreaDetector and not ProsilicaDetector for StandardCam Class below
+class StandardCam(SingleTrigger, AreaDetector):#TODO is there something more standard for prosilica? seems only used on prosilica. this does stats, but no image saving (unsure if easy to configure or not and enable/disable)
     stats1 = Cpt(StatsPlugin, 'Stats1:')
     stats2 = Cpt(StatsPlugin, 'Stats2:')
     stats3 = Cpt(StatsPlugin, 'Stats3:')
@@ -36,24 +36,121 @@ class StandardCam(SingleTrigger, AreaDetector):
     roi4 = Cpt(ROIPlugin, 'ROI4:')
     #proc1 = Cpt(ProcessPlugin, 'Proc1:')
     #trans1 = Cpt(TransformPlugin, 'Trans1:')
-
+    over1 = Cpt(OverlayPlugin, 'Over1:') ##for crosshairs in tiff
 
 class NoStatsCam(SingleTrigger, AreaDetector):
     pass
 
 
-class MonitorStatsCam(SingleTrigger, AreaDetector):
+class MonitorStatsCam(SingleTrigger, AreaDetector): #TODO does this subscribe/unsubsribe work or are we hacking EpicsSignals in custom plans
     stats1 = Cpt(StatsPlugin, "Stats1:")
     roi1 = Cpt(ROIPlugin, "ROI1:")
     proc1 = Cpt(ProcessPlugin, "Proc1:")
 
     def subscribe(self, *args, **kwargs):
-        return self.stast1.cenx.subscribe(*args, **kwargs)
+        #TODO centroid.x was orignally cenx, neither work in substribing. - figure out later.
+        return self.stats1.centroid.x.subscribe(*args, **kwargs) #TODO if this works, then add stats1.ceny too.
+        return self.stast1.centroid.y.subscribe(*args, **kwargs) #TODO if this works, then add stats1.ceny too.
 
-    def unbuscribe(self, *args, **kwargs):
-        return self.stast1.cenx.unsubscribe(*args, **kwargs)
+    def unsubuscribe(self, *args, **kwargs):
+        return self.stats1.centroid.x.unsubscribe(*args, **kwargs)
+        return self.stats1.centroid.y.unsubscribe(*args, **kwargs)
 
 
+def update_describe_typing(dic, obj):
+    """
+    Function for updating dictionary result of `describe` to include better typing.
+    Previous defaults did not use `dtype_str` and simply described an image as an array.
+
+    Parameters
+    ==========
+    dic: dict
+        Return dictionary of describe method
+    obj: OphydObject
+        Instance of plugin
+    """
+    key = obj.parent._image_name
+    cam_dtype = obj.parent.cam.data_type.get(as_string=True)
+    type_map = {'UInt8': '|u1', 'UInt16': '<u2', 'Float32':'<f4', "Float64":'<f8'}
+    if cam_dtype in type_map:
+        dic[key].setdefault('dtype_str', type_map[cam_dtype])
+
+
+class HDF5PluginWithFileStorePlain(HDF5Plugin_V22, FileStoreHDF5IterativeWrite): ##SOURCED FROM BELOW FROM FCCD WITH SWMR removed
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # In CSS help: "N < 0: Up to abs(N) new directory levels will be created"
+        self.stage_sigs.update({"create_directory": -3})
+        # last=False turns move_to_end into move_to_start. Yes, it's silly.
+        self.stage_sigs.move_to_end("create_directory", last=False)
+
+    def get_frames_per_point(self):
+        return self.parent.cam.num_images.get()
+
+    def make_filename(self):
+        # stash this so that it is available on resume
+        self._ret = super().make_filename()
+        return self._ret
+
+    def describe(self):
+        ret = super().describe()
+        update_describe_typing(ret, self)
+        return ret
+
+
+class StandardProsilicaWithHDF5(StandardCam):
+    hdf5 = Cpt(HDF5PluginWithFileStorePlain,
+              suffix='HDF1:',
+              write_path_template='/nsls2/data/csx/legacy/prosilica_data/hdf5/%Y/%m/%d',
+              root='/nsls2/data/csx/legacy')
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.hdf5.kind = "normal"
+
+
+
+class TIFFPluginWithFileStore(TIFFPlugin_V22, FileStoreTIFFIterativeWrite): #RIPPED OFF FROM CHX because mutating H5 has wrong shape for color img
+    """Add this as a component to detectors that write TIFFs."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # In CSS help: "N < 0: Up to abs(N) new directory levels will be created"
+        self.stage_sigs.update({"create_directory": -3})
+        # last=False turns move_to_end into move_to_start. Yes, it's silly.
+        self.stage_sigs.move_to_end("create_directory", last=False)
+
+    def describe(self):
+        ret = super().describe()
+        key = self.parent._image_name
+        color_mode = self.parent.cam.color_mode.get(as_string=True)
+        if color_mode == 'Mono':
+            ret[key]['shape'] = [
+                self.parent.cam.num_images.get(),
+                self.array_size.height.get(),
+                self.array_size.width.get()
+                ]
+       
+        elif color_mode in ['RGB1', 'Bayer']:
+            ret[key]['shape'] = [self.parent.cam.num_images.get(), *self.array_size.get()]
+        else:
+            raise RuntimeError(f"Parent camera color mode for TIFFPluginWithFileStore, {color_mode}, "
+                               f"not one of 'Mono', 'RGB1', nor 'Bayer'")
+        update_describe_typing(ret, self)
+        return ret
+
+
+class StandardProsilicaWithTIFF(StandardCam): #RIPPED OFF FROM CHX and not using their custom StandardProcilica class (StandardCam here)
+    tiff = Cpt(TIFFPluginWithFileStore,
+               suffix='TIFF1:',              
+               write_path_template='/nsls2/data/csx/legacy/prosilica_data/tiff/%Y/%m/%d',
+               root='/nsls2/data/csx/legacy')
+    def __init__(self, *args, **kwargs): #TODOandi-understand why must be self, #TODOclaudio should we do this for stats?
+        super().__init__(*args, **kwargs)
+        self.tiff.kind = "normal"
+    
+
+### LOOKS LIKE FCCD STUFF STARTS HERE
 class HDF5PluginSWMR(HDF5Plugin):
     swmr_active = Cpt(EpicsSignalRO, 'SWMRActive_RBV')
     swmr_mode = Cpt(EpicsSignalWithRBV, 'SWMRMode')

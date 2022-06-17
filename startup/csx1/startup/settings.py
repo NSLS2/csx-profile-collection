@@ -21,7 +21,7 @@ sd.baseline = [theta, delta, gamma, muR,
                #nanop, tardis,
                tardis,
                stemp, pgm,
-               inout, es_diag1_y, diag6_pid]
+               inout, es_diag1_y, diag6_pid,]# diag6.stats1.centroid_threshold ] ###TODOrecord_threshold_for_every_scan_and_PV_put_complete OR probably should link to diag6_pid as RO
 
 #bec.disable_baseline() #no print to CLI, just save to datastore
 
