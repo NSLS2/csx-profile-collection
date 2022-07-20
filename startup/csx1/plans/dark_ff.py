@@ -6,6 +6,35 @@ from ..startup.optics import inout
 from ..startup.detectors import fccd
 
 
+def ct_flatfield(num_imgs, detectors):
+    """Collect flatfield images for fccd with custom 'plan_name'='count_flatfield'.
+
+The pre-count number of images preserved.
+
+    Parameters
+    -----------
+    num_imgs: int
+
+        Number of images to be measured. If different from current
+        setting, the number of images will revert back to the original
+        after the scan is complete.
+
+    detectors: list
+        List of detectors to be recorded.
+        Default = [fccd]
+
+    """
+    if detectors is None:
+        detectors = [fccd]
+    revert = False
+    num_imgs_initial = yield from bps.rd(fccd.cam.num_images)
+    if num_imgs != num_imgs_initial:
+        revert = True
+        yield from mv(fccd.cam.num_images, num_imgs)
+    yield from count(detectors, md={'plan_name':'count_flatfield'}) #TODO add exception handling
+    if revert:
+        yield from mv(fccd.cam.num_images, num_imgs_initial)
+
 def ct_dark(numim=None, detectors=None, gain_std=0):
     """Collect dark images for fccd and add metadata tag for dark and gain.
 
