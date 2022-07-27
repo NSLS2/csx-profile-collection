@@ -30,10 +30,10 @@ The pre-count number of images preserved.
     num_imgs_initial = yield from bps.rd(fccd.cam.num_images)
     if num_imgs != num_imgs_initial:
         revert = True
-        yield from mv(fccd.cam.num_images, num_imgs)
-    yield from count(detectors, md={'plan_name':'count_flatfield'}) #TODO add exception handling
+        yield from bps.mv(fccd.cam.num_images, num_imgs)
+    yield from bp.count(detectors, md={'plan_name':'count_flatfield'}) #TODO add exception handling
     if revert:
-        yield from mv(fccd.cam.num_images, num_imgs_initial)
+        yield from bps.mv(fccd.cam.num_images, num_imgs_initial)
 
 def ct_dark(numim=None, detectors=None, gain_std=0):
     """Collect dark images for fccd and add metadata tag for dark and gain.
