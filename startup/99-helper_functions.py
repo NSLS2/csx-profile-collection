@@ -1,17 +1,35 @@
 ## just adding functions we keep in defs.py so we don't need to keep dragging them around.  
 ##TODO evaluate ones for csxtools (because also good for db)
 ##TODO find better place inside of csx dir for these.
-def olog_patch(string_to_write):
-    try:
-        olog(string_to_write)
-    except:
-        pass
+
+
+## Utility commands typically in startup.py..
+bec.disable_baseline()
+
+## Useful shorthands
+ct = count
+mv = bps.mv
+mvr = bps.mvr
+aset = bps.abs_set
+rset = bps.rel_set
+rsc = rel_scan
+nap = bps.sleep
+
+
+## Temporary fix due to faulty olog.. now not necessary anymore
+#def olog_patch(string_to_write):
+#    try:
+#        olog(string_to_write)
+#    except:
+#        pass
+
 
 def ct_dark_all_patch(frames=None):
     yield from mv(inout, "In")
     yield from ct_dark_all(frames)
     yield from mv(inout, "Out")
     yield from bps.sleep(10)
+
 
 def pol_L(pol, epu_cal_offset=None):
 
@@ -34,7 +52,7 @@ def pol_L(pol, epu_cal_offset=None):
     yield from bps.mv(diag6_pid.enable,1) # finepitch feedback ON
     yield from bps.sleep(1)
 
-def pol_C(pol, epu_cal_offset=-267):
+def pol_C(pol, epu_cal_offset=-267, epu_phase=None):
     '''This circular polarization change uses the horizontal polarization table and will force this table.  
     The offset is a best guess.  You should check the values to be certain.
     
@@ -45,18 +63,24 @@ def pol_C(pol, epu_cal_offset=-267):
     
     if pol == 'pos' or pol == 'neg':
         current_E = pgm.energy.setpoint.get()
+
+        if pol == 'pos' and epu_phase is None:
+            epu_phase = 16.35
+        elif pol == 'neg' and epu_phase is None:
+            epu_phase = -16.46
         
         yield from bps.mv(diag6_pid.enable,0) # OFF epu_table & m1a feedback
         yield from bps.mv(epu2.table, 2)  # forces use of LH polarization table
         yield from bps.mv(epu2.flt.input_offset, epu_cal_offset)
-        if pol == 'pos':
-            print(f'\n\n\tChanging phase to C+ or pos at THIS energy - {current_E:.2f}eV')
+        #TODO add verbose stuff if claudio agrees
+        #if pol == 'pos':
+        #    print(f'\n\n\tChanging phase to C+ or pos at THIS energy - {current_E:.2f}eV')
+        #    
+        #    yield from bps.mv(epu2.phase,16.35)
+        #elif pol == 'neg':
+        #    print(f'\n\n\tChanging phase to C- or neg at THIS energy - {current_E:.2f}eV')
             
-            yield from bps.mv(epu2.phase,16.35)
-        elif pol == 'neg':
-            print(f'\n\n\tChanging phase to C- or neg at THIS energy - {current_E:.2f}eV')
-            
-            yield from bps.mv(epu2.phase,-16.50)
+        yield from bps.mv(epu2.phase, epu_phase)
         
         yield from bps.mv(diag6_pid.enable,1) # finepitch feedback ON
         yield from bps.sleep(1)
