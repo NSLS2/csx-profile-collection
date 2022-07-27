@@ -6,7 +6,7 @@ from ..startup.optics import inout
 from ..startup.detectors import fccd
 
 
-def ct_flatfield(num_imgs, detectors):
+def ct_flatfield(num_imgs, detectors=None):
     """Collect flatfield images for fccd with custom 'plan_name'='count_flatfield'.
 
 The pre-count number of images preserved.
