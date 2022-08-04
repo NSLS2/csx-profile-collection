@@ -30,22 +30,25 @@ class SCMOSToDisk(Device):
         self.acq_count = 0
         self.path_dir = Path("/nsls2/data/csx/legacy/sCMOS/")
         self.path_prefix = ""
+        self.is_dark = False
 
     def trigger(self):
-        yield from bps.mv(self.capture_mode, 2)
-        path = self.path_dir / f"{self.path_prefix}{self.acq_count}_background.raw"
-        yield from bps.mv(self.output_path, str(path))
-        yield from bps.mv(self._trigger, 0)
-
-        yield from bps.mv(self.capture_mode, 2)
-        path = self.path_dir / f"{self.path_prefix}{self.acq_count}_foreground.raw"
-        yield from bps.mv(self.output_path, str(path))
-        yield from bps.mv(self._trigger, 1)
+        if self.is_dark:
+            yield from bps.mv(self.capture_mode, 2)
+            path = self.path_dir / f"{self.path_prefix}_{self.acq_count}_background.raw"
+            yield from bps.mv(self.output_path, str(path))
+            yield from bps.mv(self._trigger, 0)
+        else:
+            yield from bps.mv(self.capture_mode, 2)
+            path = self.path_dir / f"{self.path_prefix}_{self.acq_count}_foreground.raw"
+            yield from bps.mv(self.output_path, str(path))
+            yield from bps.mv(self._trigger, 1)
 
         self.acq_count += 1
 
     def read(self):
-        path = caget(self.output_path.cls, as_string=True)
+        path = self.output_path.get()
+        # path = caget(self.output_path.cls, as_string=True)
         return OrderedDict(value=path, timestamp=time.time())
 
     def describe(self):
