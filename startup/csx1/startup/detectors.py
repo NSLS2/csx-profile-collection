@@ -19,7 +19,7 @@ from ..devices.areadetector import (StandardCam, NoStatsCam,
                                     StageOnFirstTrigger,
                                     MonitorStatsCam,
                                     StandardProsilicaWithHDF5, StandardProsilicaWithTIFF) #TODOpmab - added to try to save (inspired from SIX)
-
+from ..devices.scmos import SCMOSToDisk
 from ..startup import db
 
 def _setup_stats(cam_in):
@@ -27,6 +27,10 @@ def _setup_stats(cam_in):
         cam_in.read_attrs.append(k)
         getattr(cam_in, k).read_attrs = ['total']
 
+
+# Testing sCMOS camera
+scmos = SCMOSToDisk("XF:23ID1-ES{CMOS}cam1", name="scmos")
+# Testing sCMOS camera
 
 
 # #TODO delete, it is already in diag6
