@@ -26,9 +26,11 @@ nap = bps.sleep
 
 def ct_dark_all_patch(frames=None):
     yield from mv(inout, "In")
+    yield from mv(diag6_pid.enable, 0)
     yield from ct_dark_all(frames)
     yield from mv(inout, "Out")
-    yield from bps.sleep(10)
+    yield from mv(diag6_pid.enable, 1)
+    yield from bps.sleep(.1)
 
 
 def pol_L(pol, epu_cal_offset=None):
