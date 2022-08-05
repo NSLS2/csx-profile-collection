@@ -1,13 +1,10 @@
 """Module for workinbg with sCMOS camera.
  This is a device currently under development by the supplier,
  and does not currently (as of 2022-08-02) use a proper AreaDetector driver"""
-
-from ophyd import Device, EpicsSignal, EpicsSignalRO
+import threading
+from ophyd import Device, EpicsSignal, Kind, DeviceStatus
 from ophyd import Component as Cpt
-from epics import caget, caput
-from collections import OrderedDict
 import time
-import bluesky.plan_stubs as bps
 from pathlib import Path
 
 
@@ -21,9 +18,9 @@ class SCMOSToDisk(Device):
     """
 
     output_path = Cpt(EpicsSignal, ":DVFilename")
-    acquire_time = Cpt(EpicsSignal, ":AcquireTime")
-    capture_mode = Cpt(EpicsSignal, ":CaptureMode")
-    _trigger = Cpt(EpicsSignal, ":StartCapture")
+    acquire_time = Cpt(EpicsSignal, ":AcquireTime", kind=Kind.config)
+    capture_mode = Cpt(EpicsSignal, ":CaptureMode", kind=Kind.config)
+    _trigger_pv = Cpt(EpicsSignal, ":StartCapture", kind=Kind.omitted)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -32,24 +29,35 @@ class SCMOSToDisk(Device):
         self.path_prefix = ""
         self.is_dark = False
 
-    def trigger(self):
+    def _acquire(self, status: DeviceStatus):
+        """
+        This is how we would do this if there was a way to see were done with acquisition...
+        Maffettone didn't see anything in the manual.
+        acq_signal.put(1, wait=False, callback=done_acquisition)
+        """
         if self.is_dark:
-            yield from bps.mv(self.capture_mode, 2)
+            self.capture_mode.put(2)
             path = self.path_dir / f"{self.path_prefix}_{self.acq_count}_background.raw"
-            yield from bps.mv(self.output_path, str(path))
-            yield from bps.mv(self._trigger, 0)
+            self.output_path.put(str(path))
+            self._trigger_pv.put(0)
         else:
-            yield from bps.mv(self.capture_mode, 2)
+            self.capture_mode.put(2)
             path = self.path_dir / f"{self.path_prefix}_{self.acq_count}_foreground.raw"
-            yield from bps.mv(self.output_path, str(path))
-            yield from bps.mv(self._trigger, 1)
+            self.output_path.put(str(path))
+            self._trigger_pv.put(1)
+        time.sleep(self.acquire_time.get())
+        status.set_finished()
 
+    def trigger(self):
+        status = DeviceStatus(self)
+        threading.Thread(target=self._acquire, args=(status,), daemon=True).start()
         self.acq_count += 1
+        return status
 
-    def read(self):
-        path = self.output_path.get()
-        # path = caget(self.output_path.cls, as_string=True)
-        return OrderedDict(value=path, timestamp=time.time())
-
-    def describe(self):
-        return {}
+    """Ideally by managing kind effectively, read and describe can be auto assembled."""
+    # def read(self):
+    #     path = self.output_path.get()
+    #     return OrderedDict(value=path, timestamp=time.time())
+    #
+    # def describe(self):
+    #     return {}
