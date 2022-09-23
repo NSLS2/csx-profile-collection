@@ -106,12 +106,10 @@ def md_info(default_md = RE.md):
     print('\n\n Use \'md_info()\' or \'RE.md\' to inspect again.')
 
 def mvslt3(size=None):
-    holes = [(2000,-15.00,-0.30),    #TODO eventually have IOC to track these values
-               (50,  -6.08,-0.25),
-               #(20,   2.65,-0.25),
-               (20,   2.65,-0.219),
-               #(10,  11.27,-0.10),
-               (10,  11.277,-0.04),] 
+    holes = [(2000,  -8.52, 0.90),    #TODO eventually have IOC to track these values
+               (50,   0.00, 0.00),
+               (20,   8.74, 0.02),
+               (10,  17.38,-0.95),] 
     if size is None:
         xpos = np.round( slt3.x.read()['slt3_x']['value'], 2)
         ypos = np.round( slt3.y.read()['slt3_y']['value'], 2)
