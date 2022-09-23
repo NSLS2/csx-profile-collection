@@ -106,19 +106,19 @@ def md_info(default_md = RE.md):
     print('\n\n Use \'md_info()\' or \'RE.md\' to inspect again.')
 
 def mvslt3(size=None):
-    holes = [(2000,  -8.52, 0.90),    #TODO eventually have IOC to track these values
-               (50,   0.00, 0.00),
-               (20,   8.74, 0.02),
-               (10,  17.38,-0.95),] 
+    holes = {2000: ( -8.52, 0.90),    #TODO eventually have IOC to track these values
+               50: (  0.00, 0.00),
+               20: (  8.74, 0.02),
+               10: ( 17.38, 0.20),} 
     if size is None:
         xpos = np.round( slt3.x.read()['slt3_x']['value'], 2)
         ypos = np.round( slt3.y.read()['slt3_y']['value'], 2)
         
-        for h in holes:
-            #print('checking', xpos, ypos ,'for ', h[1])
-            if xpos == h[1] and ypos == h[2]:
-                print(f'{h[0]} um pinhole at slt3')
-                break
+        #for h in holes:  #TODO - now reverse lookup so the motion part is better
+        #    #print('checking', xpos, ypos ,'for ', h[1])
+        #    if xpos == h[1] and ypos == h[2]:
+        #        print(f'{h[0]} um pinhole at slt3')
+        #        break
             
     elif size is None:
         print(f'Unknown configuration: slt3.x = {xpos:.4f}, slt3.y = {ypos:.4f}') 
@@ -126,14 +126,16 @@ def mvslt3(size=None):
 
     else:
         print('Moving to {} um slit 3'.format(size))
-        if size==2000:
-            yield from bps.mv(slt3.x,-15,slt3.y,-0.30)
-        if size==50:
-            yield from bps.mv(slt3.x,-6.08,slt3.y,-0.25)
-        if size==20:
-            #yield from bps.mv(slt3.x,2.65,slt3.y,-0.25)
-            yield from bps.mv(slt3.x,2.65,slt3.y,-0.219)
-        if size==10:
-            #yield from bps.mv(slt3.x,11.27,slt3.y,-0.10)
-            yield from bps.mv(slt3.x,11.277,slt3.y,-0.04)
+        x_pos, y_pos = holes[size]
+        yield from bps.mv(slt3.x, x_pos, slt3.y, y_pos)
+        #if size==2000:
+        #    yield from bps.mv(slt3.x,-15,slt3.y,-0.30)
+        #if size==50:
+        #    yield from bps.mv(slt3.x,-6.08,slt3.y,-0.25)
+        #if size==20:
+        #    #yield from bps.mv(slt3.x,2.65,slt3.y,-0.25)
+        #    yield from bps.mv(slt3.x,2.65,slt3.y,-0.219)
+        #if size==10:
+        #    #yield from bps.mv(slt3.x,11.27,slt3.y,-0.10)
+        #    yield from bps.mv(slt3.x,11.277,slt3.y,-0.04)
 
