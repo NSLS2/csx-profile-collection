@@ -106,7 +106,8 @@ def md_info(default_md = RE.md):
     print('\n\n Use \'md_info()\' or \'RE.md\' to inspect again.')
 
 def mvslt3(size=None):
-    holes = {2000: ( -8.52, 0.90),    #TODO eventually have IOC to track these values
+    #x Mtr.OFF = 4.88, y Mtr.OFF = -0.95
+    holes = {2000: ( -8.52,-0.05),    #TODO eventually have IOC to track these values
                50: (  0.00, 0.00),
                20: (  8.74, 0.02),
                10: ( 17.38, 0.20),} 
@@ -128,14 +129,4 @@ def mvslt3(size=None):
         print('Moving to {} um slit 3'.format(size))
         x_pos, y_pos = holes[size]
         yield from bps.mv(slt3.x, x_pos, slt3.y, y_pos)
-        #if size==2000:
-        #    yield from bps.mv(slt3.x,-15,slt3.y,-0.30)
-        #if size==50:
-        #    yield from bps.mv(slt3.x,-6.08,slt3.y,-0.25)
-        #if size==20:
-        #    #yield from bps.mv(slt3.x,2.65,slt3.y,-0.25)
-        #    yield from bps.mv(slt3.x,2.65,slt3.y,-0.219)
-        #if size==10:
-        #    #yield from bps.mv(slt3.x,11.27,slt3.y,-0.10)
-        #    yield from bps.mv(slt3.x,11.277,slt3.y,-0.04)
 
