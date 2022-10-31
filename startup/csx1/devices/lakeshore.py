@@ -13,7 +13,7 @@ class Lakeshore336Setpoint(PVPositioner):
     setpoint = Cpt(EpicsSignal, 'T-SP')
     done = Cpt(EpicsSignalRO, 'Sts:Ramp-Sts')
     ramp_enabled = Cpt(EpicsSignal, 'Enbl:Ramp-Sel')
-    ramp_rate = Cpt(EpicsSignalRO, 'Val:Ramp-SP')
+    ramp_rate = Cpt(EpicsSignal, 'Val:Ramp-SP')  #AB changed to not be RO
     #ramp_rate = Cpt(EpicsSignal, 'Val:Ramp-RB')
     done_value = 0
 
