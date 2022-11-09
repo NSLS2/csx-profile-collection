@@ -49,12 +49,18 @@ class EPSTwoStateDevice(Device):
                 # just move on
                 ...
             if value == target_val:
-                self._set_st._finished()
-                self._set_st = None
                 self.status.clear_sub(shutter_cb)
+                cmd_sig.clear_sub(cmd_retry_cb)
+                # This was a race condition, fixed.
+                # First clear self._set_st to allow future moves to start,
+                # and _then_ mark the current move as done.
+                self._set_st = None
+                st.set_finished()
 
         cmd_enums = cmd_sig.enum_strs
         count = 0
+        MAX_RETRIES = 5
+        WAIT_FOR_RETRY = 0.5  # seconds
         def cmd_retry_cb(value, timestamp, **kwargs):
             nonlocal count
             try:
@@ -64,17 +70,17 @@ class EPSTwoStateDevice(Device):
                 # just move on
                 ...
             count += 1
-            if count > 5:
+            if count > MAX_RETRIES:
                 cmd_sig.clear_sub(cmd_retry_cb)
-                st._finished(success=False)
+                err = Exception(f"Retried {MAX_RETRIES} times and did not finish.")
+                st.set_exception(err)
             if value == 'None':
                 if not st.done:
-                    ttime.sleep(.5)
+                    ttime.sleep(WAIT_FOR_RETRY)
+                    # Retry setting the command to 1.
                     cmd_sig.set(1)
                     ts = datetime.datetime.fromtimestamp(timestamp).strftime(_time_fmtstr)
                     print('** ({}) Had to reactuate shutter while {}ing'.format(ts, val))
-                else:
-                    cmd_sig.clear_sub(cmd_retry_cb)
 
         cmd_sig.subscribe(cmd_retry_cb, run=False)
         cmd_sig.set(1)
