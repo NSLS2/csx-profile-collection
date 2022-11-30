@@ -120,7 +120,7 @@ class Lakeshore336Picky(Device):
 
         # todo, set up subscription forwarding
         if self._target_channel == 'setpoint':
-            self.setpoint.subscribe(local_cb, 'value')
+            self.setpoint.subscribe(self._setpoint_cb, 'value')
         else:
             target = getattr(self, self._target_channel).T
             target.subscribe(self._value_cb, 'value')
