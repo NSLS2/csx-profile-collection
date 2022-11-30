@@ -1,3 +1,5 @@
+import numpy as np
+
 from ophyd import (EpicsMotor, PVPositioner, PVPositionerPC,
                    EpicsSignal, EpicsSignalRO, Device)
 from ophyd import Component as Cpt
