@@ -98,7 +98,7 @@ class Lakeshore336Picky(Device):
             self._done_sts._finished()
             self._reset()
 
-    def _setpoint_cb(value, **kwargs):
+    def _setpoint_cb(self, value, **kwargs):
         print('in cb', value)
         if value == self._setpoint:
             self._done_sts._finished()
@@ -193,5 +193,3 @@ class DelayGenerator(Device):
 #    @property
 #    def trigger_signals(self):
 #        return [self.mca.erase_start]
-
-
