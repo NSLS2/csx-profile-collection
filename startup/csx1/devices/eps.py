@@ -75,16 +75,16 @@ class EPSTwoStateDevice(Device):
                 err = Exception(f"Retried {MAX_RETRIES} times and did not finish.")
                 st.set_exception(err)
             if value == 'None':
+                ttime.sleep(WAIT_FOR_RETRY)
                 if not st.done:
-                    ttime.sleep(WAIT_FOR_RETRY)
                     # Retry setting the command to 1.
                     cmd_sig.set(1)
                     ts = datetime.datetime.fromtimestamp(timestamp).strftime(_time_fmtstr)
-                    print('** ({}) Had to reactuate shutter while {}ing'.format(ts, val))
+                    print('** ({}) Had to reactuate shutter while {}ing v2'.format(ts, val))
 
         cmd_sig.subscribe(cmd_retry_cb, run=False)
-        cmd_sig.set(1)
         self.status.subscribe(shutter_cb)
+        cmd_sig.set(1)
 
         return st
 
