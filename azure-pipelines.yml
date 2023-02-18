@@ -3,25 +3,19 @@ resources:
     - repository: templates
       type: github
       name: NSLS-II/profile-collection-ci
-      ref: refs/heads/main
+      ref: refs/heads/2023-1.1
       endpoint: github
 
 jobs:
-  - template: nsls2-collection-2021-2.2.yml@templates
+  - template: 2023-1.1-py39.yml@templates
     parameters:
       beamline_acronym: CSX
-  - template: nsls2-collection-2021-2.2-py39.yml@templates
+  - template: 2023-1.1-py39-tiled.yml@templates
     parameters:
       beamline_acronym: CSX
-  - template: nsls2-collection-2021-3.1-py37.yml@templates
+  - template: 2023-1.1-py310.yml@templates
     parameters:
       beamline_acronym: CSX
-  - template: nsls2-collection-2021-3.1-py39.yml@templates
-    parameters:
-      beamline_acronym: CSX
-  - template: nsls2-collection-2022-1.0-py37.yml@templates
-    parameters:
-      beamline_acronym: CSX
-  - template: nsls2-collection-2022-1.0-py39.yml@templates
+  - template: 2023-1.1-py310-tiled.yml@templates
     parameters:
       beamline_acronym: CSX
