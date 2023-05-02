@@ -2,7 +2,8 @@
 
 import bluesky.plans as bp
 import bluesky.plan_stubs as bps
-from ..startup.optics import inout
+from ..startup.optics import inout, diag6_pid
+
 from ..startup.detectors import fccd
 
 
