@@ -89,7 +89,7 @@ The pre-count shutter & gain states preserved.
         #        1/acq_time, acq_time))
 
         #print('\tCurrent number of images = {}.\n'.format(oldnumim))
-        yield from mv(diag6_pid.enable, 0) #turn feedback off to stop beam mis-steer
+        yield from bps.mv(diag6_pid.enable, 0) #turn feedback off to stop beam mis-steer
         yield from bps.sleep(.3) #TODO needed to make sure that the readback is changed im time for numim
 
         if numim is not None:
@@ -211,7 +211,7 @@ def ct_dark_all(numim=None, detectors=None):
         #print('\tCurrent number of images = {}.\n'.format(oldnumim))
 
         yield from bps.sleep(.3)
-        yield from mv(diag6_pid.enable, 0) #turn feedback off to stop beam mis-steer
+        yield from bps.mv(diag6_pid.enable, 0) #turn feedback off to stop beam mis-steer
 
         if numim is not None:
             #print('\tSetting to {} images.\n'.format(numim))
