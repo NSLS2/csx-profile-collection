@@ -16,6 +16,6 @@ jobs:
   - template: 2023-1.2-py39-tiled.yml@templates
     parameters:
       beamline_acronym: CSX
-  - template: 2023-1.2-py310-tiled.yml.yml@templates
+  - template: 2023-1.2-py310-tiled.yml@templates
     parameters:
       beamline_acronym: CSX
