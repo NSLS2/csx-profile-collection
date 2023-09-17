@@ -62,7 +62,7 @@ The pre-count shutter & gain states preserved.
     """
     if detectors is None:
         detectors = [fccd]
-    print('starting dark')
+    #print('starting dark')
     try:
         getit = inout.read()
         dark_shutter_state = getit['inout_status']['value']
@@ -90,6 +90,8 @@ The pre-count shutter & gain states preserved.
 
         #print('\tCurrent number of images = {}.\n'.format(oldnumim))
 
+        #print('\tCurrent number of images = {}.\n'.format(oldnumim))
+        yield from bps.mv(diag6_pid.enable, 0) #turn feedback off to stop beam mis-steer
         yield from bps.sleep(.3) #TODO needed to make sure that the readback is changed im time for numim
 
         if numim is not None:
@@ -134,8 +136,8 @@ def _ct_dark(detectors, gain_bit_input, gain_bit_dict):
     yield from bps.mv(fccd.cam.fcric_gain, gain_bit_input)
     # if _gain_bit_input != 0:
     #     yield from bps.sleep(fccd.cam.acquire_period.value*2.01) # This has to be 2 until we can selectively remove dark images get_fastccd_images()
-    print('\n\nGain bit set to {} for a gain value of {}\n'.format(
-        gain_bit_input, gain_bit_dict.get(gain_bit_input)))
+    #print('\n\nGain bit set to {} for a gain value of {}\n'.format(
+    #    gain_bit_input, gain_bit_dict.get(gain_bit_input)))
 
     #adding because it gets hung somewhere around here #TODO
     #print('Ready to begin data collection next.')
@@ -216,6 +218,7 @@ def ct_dark_all(numim=None, detectors=None):
         #print('\tCurrent number of images = {}.\n'.format(oldnumim))
 
         yield from bps.sleep(.3)
+        yield from bps.mv(diag6_pid.enable, 0) #turn feedback off to stop beam mis-steer
 
         if numim is not None:
             #print('\tSetting to {} images.\n'.format(numim))
