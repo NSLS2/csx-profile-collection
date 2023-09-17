@@ -63,13 +63,13 @@ _setup_stats(diag3)
 diag6 = MonitorStatsCam('XF:23ID1-BI{Diag:6-Cam:1}', name='diag6') #TODO testing
 
 #diag6 = NoStatsCam('XF:23ID1-BI{Diag:6-Cam:1}', name='diag6') #TODO revert above test
-#diag6.stats1.centroid_threshold.kind = 'normal' ## maybe can only subscribe diag6? ##TODOrecord_threshold_for_every_scan_and_PV_put_complete
+#diag6.stats1.centroid_threshold.kind = :normal' ## maybe can only subscribe diag6? ##TODOrecord_threshold_for_every_scan_and_PV_put_complete
 #diag6.stats1.kind = 'normal'
 diag6_hdf5 = StandardProsilicaWithHDF5('XF:23ID1-BI{Diag:6-Cam:1}', name='diag6_hdf5') #TODO replace with DSSI project
 #_setup_stats_cen(diag6_hdf5)
 ## 20180726 needed to comment due to IOC1 problems - probably ok now, but not used.
-#cube_beam = StandardCam('XF:23ID1-BI{Diag:5-Cam:1}', name='cube_beam')
-#_setup_stats(cube_beam)
+cube_beam = StandardCam('XF:23ID1-ES{Diag:5-Cam:1}', name='cube_beam')
+_setup_stats(cube_beam)
 
 dif_beam = StandardCam('XF:23ID1-ES{Dif-Cam:Beam}', name='dif_beam')
 dif_beam_hdf5 = StandardProsilicaWithHDF5('XF:23ID1-ES{Dif-Cam:Beam}', name='dif_beam_hdf5') #TODO replace with DSSI project
