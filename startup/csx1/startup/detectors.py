@@ -50,60 +50,57 @@ mcs = StruckSIS3820MCS('XF:23ID1-ES{Sclr:1}', name='mcs')
 # Diagnostic Prosilica Cameras
 #
 
-diag2 = StandardCam('XF:23ID1-BI{Diag:2-Cam:1}', name='diag2')#TODOpmab optional imagesave w/ stats always
-_setup_stats(diag2) #diamond diagnostic
+cam_diag2 = StandardCam('XF:23ID1-BI{Diag:2-Cam:1}', name='cam_diag2')#TODOpmab optional imagesave w/ stats always
+_setup_stats(cam_diag2) #diamond diagnostic
 
 ## 20180726 needed to comment due to IOC1 problems
-slt1_cam = StandardCam('XF:23ID1-BI{Slt:1-Cam:1}', name='slt1_cam')
-_setup_stats(slt1_cam)
+cam_slt1 = StandardCam('XF:23ID1-BI{Slt:1-Cam:1}', name='cam_slt1')
+_setup_stats(cam_slt1)
 
-diag3 = StandardCam('XF:23ID1-BI{Diag:3-Cam:1}', name='diag3')
-_setup_stats(diag3)
+cam_diag3 = StandardCam('XF:23ID1-BI{Diag:3-Cam:1}', name='cam_diag3')
+_setup_stats(cam_diag3)
 
-diag6 = MonitorStatsCam('XF:23ID1-BI{Diag:6-Cam:1}', name='diag6') #TODO testing
+cam_diag6 = MonitorStatsCam('XF:23ID1-BI{Diag:6-Cam:1}', name='cam_diag6') #TODO testing
 
-#diag6 = NoStatsCam('XF:23ID1-BI{Diag:6-Cam:1}', name='diag6') #TODO revert above test
-#diag6.stats1.centroid_threshold.kind = :normal' ## maybe can only subscribe diag6? ##TODOrecord_threshold_for_every_scan_and_PV_put_complete
-#diag6.stats1.kind = 'normal'
-diag6_hdf5 = StandardProsilicaWithHDF5('XF:23ID1-BI{Diag:6-Cam:1}', name='diag6_hdf5') #TODO replace with DSSI project
-#_setup_stats_cen(diag6_hdf5)
+#cam_diag6 = NoStatsCam('XF:23ID1-BI{Diag:6-Cam:1}', name='diag6') #TODO revert above test
+#cam_diag6.stats1.centroid_threshold.kind = :normal' ## maybe can only subscribe diag6? ##TODOrecord_threshold_for_every_scan_and_PV_put_complete
+#cam_diag6.stats1.kind = 'normal'
+cam_diag6_hdf5 = StandardProsilicaWithHDF5('XF:23ID1-BI{Diag:6-Cam:1}', name='cam_diag6_hdf5') #TODO replace with DSSI project
+#_setup_stats_cen(cam_diag6_hdf5)
 ## 20180726 needed to comment due to IOC1 problems - probably ok now, but not used.
-cube_beam = StandardCam('XF:23ID1-ES{Diag:5-Cam:1}', name='cube_beam')
-_setup_stats(cube_beam)
+cam_dif = StandardCam('XF:23ID1-ES{Diag:5-Cam:1}', name='cam_dif')
+cam_dif_hdf5 = StandardProsilicaWithHDF5('XF:23ID1-ES{Diag:5-Cam:1}', name='cam_dif_hdf5')
+_setup_stats(cam_dif)
+#_setup_stats_cen(cam_dif_hdf5)
 
-dif_beam = StandardCam('XF:23ID1-ES{Dif-Cam:Beam}', name='dif_beam')
-dif_beam_hdf5 = StandardProsilicaWithHDF5('XF:23ID1-ES{Dif-Cam:Beam}', name='dif_beam_hdf5') #TODO replace with DSSI project
-_setup_stats(dif_beam)
-#_setup_stats_cen(dif_beam_hdf5)
+cam_slt3 = StandardCam('XF:23ID1-ES{Dif-Cam:Beam}', name='cam_slt3')
+#cam_slt3_hdf5 = StandardProsilicaWithHDF5('XF:23ID1-ES{Dif-Cam:Beam}', name='cam_slt3_hdf5') #TODO replace with DSSI project
+_setup_stats(cam_slt3)
+#_setup_stats_cen(cam_slt3_hdf5)
 
 
 # Setup on 2018/03/16 for correlating fCCD and sample position - worked 
 # DON'T NEED STATS to take pictures of sample/optics
 #dif_cam1 = StandardCam('XF:23ID1-ES{Dif-Cam:1}', name='dif_cam1' )
 #_setup_stats(dif_cam2) #comment to disable
-dif_cam1 = StandardProsilicaWithTIFF('XF:23ID1-ES{Dif-Cam:1}', name='dif_cam1')
-dif_cam2 = StandardProsilicaWithTIFF('XF:23ID1-ES{Dif-Cam:2}', name='dif_cam2')
-dif_cam3 = StandardProsilicaWithTIFF('XF:23ID1-ES{Dif-Cam:3}', name='dif_cam3')##TODO think how to fix with trans plugin
+cam_dif_micro = StandardProsilicaWithTIFF('XF:23ID1-ES{Dif-Cam:1}', name='cam_dif_micro')
+cam_dif_top = StandardProsilicaWithTIFF('XF:23ID1-ES{Dif-Cam:2}', name='cam_dif_top')
+cam_dif_side = StandardProsilicaWithTIFF('XF:23ID1-ES{Dif-Cam:3}', name='cam_dif_side')##TODO think how to fix with trans plugin
 
 ## 20201219 - Machine studies for source characterization #TODO save also images like real detector
-fs_cam = StandardCam('XF:23IDA-BI:1{FS:1-Cam:1}', name='fs_cam') #TODOpmab optional imagesave w/ stats always
+cam_fs = StandardCam('XF:23IDA-BI:1{FS:1-Cam:1}', name='cam_fs') #TODOpmab optional imagesave w/ stats always
 
-#TODOpmab-andi plugin and start IOC
-#bs_cam = StandardCam('XF:23ID1-BI{Diag:7-Cam:1}', name='bs_cam') #TODOpmab optional imagesave w/ stats always
-#_setup_stats(bs_cam)
+
+#cam_pa= StandardCam('XF:23ID1-BI{Diag:7-Cam:1}', name='cam_pa') #TODOpmab optional imagesave w/ stats always
+#_setup_stats(cam_pa)
 
 ### SWITCH AS NEEDED per experiment
 ### OPT1
-#pa_cam = StandardCam('XF:23ID1-BI{Diag:8-Cam:1}', name='pa_cam') #TODOpmab optional imagesave w/ stats always
-#_setup_stats(pa_cam)
-#pa_cam_hdf5 = StandardProsilicaWithHDF5('XF:23ID1-BI{Diag:8-Cam:1}', name='pa_cam_hdf5') #TODO replace with DSSI project
-#_setup_stats(pa_cam)
-#_setup_stats(pa_cam_hdf5)
-### OPT2
-diag6new = MonitorStatsCam('XF:23ID1-BI{Diag:8-Cam:1}', name='diag6new') #TODO testing
-##diag6new = NoStatsCam('XF:23ID1-BI{Diag:8-Cam:1}', name='diag6new') #TODO revert above test
-diag6new_hdf5 = StandardProsilicaWithHDF5('XF:23ID1-BI{Diag:8-Cam:1}', name='diag6new_hdf5') #TODO replace with DSSI project
-#_setup_stats_cen(diag6new_hdf5)
+#cam_bs = StandardCam('XF:23ID1-BI{Diag:8-Cam:1}', name='cam_bs') #TODOpmab optional imagesave w/ stats always
+#_setup_stats(cam_bs)
+#cam_bs_hdf5 = StandardProsilicaWithHDF5('XF:23ID1-BI{Diag:8-Cam:1}', name='cam_bs_hdf5') #TODO replace with DSSI project
+#_setup_stats(cam_bs)
+#_setup_stats(cam_bs_hdf5)
 
 
 # FastCCD
@@ -158,5 +155,5 @@ _setup_stats(fccd)
 configuration_attrs_list = []                        
 configuration_attrs_list.extend(['roi' + str(i) + string for i in range(1,5) for string in roi_params])
 for attr in configuration_attrs_list:
-    getattr(dif_beam_hdf5, attr).kind='config'
-dif_beam_hdf5.configuration_attrs.extend(['roi1', 'roi2', 'roi3','roi4'])
+    getattr(cam_dif_hdf5, attr).kind='config'
+cam_dif_hdf5.configuration_attrs.extend(['roi1', 'roi2', 'roi3','roi4'])

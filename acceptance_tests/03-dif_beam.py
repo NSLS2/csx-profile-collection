@@ -3,9 +3,9 @@ from bluesky.plans import rel_scan
 
 
 assert sclr.connected
-assert dif_beam.connected
+assert cam_dif.connected
 
-#subs = [LiveTable(['eta', 'sclr_ch3', 'dif_beam_stats5_total']),
-#        LivePlot('dif_beam_stats5_total', 'eta')]
+#subs = [LiveTable(['eta', 'sclr_ch3', 'cam_dif_stats5_total']),
+#        LivePlot('cam_dif_stats5_total', 'eta')]
 
-RE(rel_scan([sclr, dif_beam], theta, -.1, .1, 5))
+RE(rel_scan([sclr, cam_dif], theta, -.1, .1, 5))
