@@ -43,9 +43,9 @@ def relabel_fig(fig, new_label):
 for i in [1, 2, 3, 4, 5]:
     getattr(fccd, f'stats{i}').total.kind = 'hinted'
 
-# dif_beam.hints = {'fields' : ['dif_beam_stats3_total','dif_beam_stats1_total']}
+# cam_dif.hints = {'fields' : ['cam_dif_stats3_total','cam_dif_stats1_total']}
 for i in [1, 3]:
-    getattr(dif_beam, f'stats{i}').total.kind = 'hinted'
+    getattr(cam_dif, f'stats{i}').total.kind = 'hinted'
 
 ## 20180726 needed to comment due to IOC1 problems
 #cube_beam.hints = {'fields': ['cube_beam_stats2_total', 'cube_beam_stats1_total']}
