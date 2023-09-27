@@ -105,12 +105,12 @@ def md_info(default_md = RE.md):
         print(f'    {info:_<30} : {val}')
     print('\n\n Use \'md_info()\' or \'RE.md\' to inspect again.')
 
-def mvslt3(size=None):
+def mvslt3(size=None): #TODO make a better version for slt3.pinhole child
     #x Mtr.OFF = 4.88, y Mtr.OFF = -0.95
-    holes = {2000: ( -8.52,-0.05),    #TODO eventually have IOC to track these values
+    holes = {2000: ( -8.79, 0.00),    #TODO eventually have IOC to track these values
                50: (  0.00, 0.00),
-               20: (  8.74, 0.02),
-               10: ( 17.38, 0.20),} 
+               20: (  8.818, 0.065),
+               10: ( 17.534,-0.055),} 
     if size is None:
         xpos = np.round( slt3.x.read()['slt3_x']['value'], 2)
         ypos = np.round( slt3.y.read()['slt3_y']['value'], 2)
