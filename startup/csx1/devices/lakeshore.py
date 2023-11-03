@@ -1,5 +1,7 @@
 from collections import deque
 
+import numpy as np
+
 from ophyd import (EpicsMotor, PVPositioner, PVPositionerPC,
                    EpicsSignal, EpicsSignalRO, Device)
 from ophyd import Component as Cpt
@@ -98,7 +100,7 @@ class Lakeshore336Picky(Device):
             self._done_sts._finished()
             self._reset()
 
-    def _setpoint_cb(value, **kwargs):
+    def _setpoint_cb(self, value, **kwargs):
         print('in cb', value)
         if value == self._setpoint:
             self._done_sts._finished()
@@ -141,7 +143,7 @@ class Lakeshore336Picky(Device):
 
         # todo, set up subscription forwarding
         if self._target_channel == 'setpoint':
-            self.setpoint.subscribe(local_cb, 'value')
+            self.setpoint.subscribe(self._setpoint_cb, 'value')
         else:
             target = getattr(self, self._target_channel).T
             target.subscribe(self._value_cb, 'value')
@@ -193,5 +195,3 @@ class DelayGenerator(Device):
 #    @property
 #    def trigger_signals(self):
 #        return [self.mca.erase_start]
-
-
