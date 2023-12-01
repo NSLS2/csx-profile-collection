@@ -110,7 +110,7 @@ def mvslt3(size=None): #TODO make a better version for slt3.pinhole child
     holes = {2000: ( -8.79, 0.00),    #TODO eventually have IOC to track these values
                50: (  0.00, 0.00),
                20: (  8.799, 0.065),
-               10: ( 17.534,-0.045),} 
+               10: ( 17.50,-0.045),} 
     if size is None:
         xpos = np.round( slt3.x.read()['slt3_x']['value'], 2)
         ypos = np.round( slt3.y.read()['slt3_y']['value'], 2)
