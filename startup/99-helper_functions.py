@@ -43,11 +43,11 @@ def pol_L(pol, epu_cal_offset=None):
         
     if pol == 'H':
         print(f'\n\n\tChanging phase to linear horizontal at THIS energy - {current_E:.2f}eV')
-        yield from bps.mv(epu2.table, 2)
+        yield from bps.mv(epu2.table, 5)
         yield from bps.mv(epu2.phase,0)
     elif pol == 'V':
         print(f'\n\n\tChanging phase to linear vertical at THIS energy - {current_E:.2f}eV')
-        yield from bps.mv(epu2.table, 3)
+        yield from bps.mv(epu2.table, 6)
         yield from bps.mv(epu2.phase,24.6)
     
     
