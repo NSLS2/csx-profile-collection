@@ -6,7 +6,28 @@ from ophyd import Component as Cpt
 from ophyd import FormattedComponent as FmtCpt
 from ophyd import DynamicDeviceComponent as DDC
 from ophyd import (EpicsMCA, EpicsDXP)
-from ophyd import DeviceStatus, OrderedDict
+from ophyd import DeviceStatus, OrderedDicti
+
+
+
+class PMACKiller(EpicsSignal):
+    """stop gap to kill epics motors within the bluesky RE so that the amplifier and control-loop are disabled. 
+
+    kill_delta = PMACKiller(write_pv="XF:23ID1-ES{Dif-Ax:Del}Cmd:Kill-Cmd.PROC", read_pv="XF:23ID1-CT{MC:12-Ax:1}Kill-Sts")
+
+    RE(bps.mv(kill_delta, 0))
+
+    Args:
+        writepv : full PV for a controller and axis kill-cmd that is a PROC record
+        readpv : full PV for a controller and axis kill-status
+    """
+    def set(self, value, *args, **kwargs):
+        if value != 1: 
+            logging.getLogger(__name__).warning("The value of the PMACKiller should only ever be set to 1. "
+                "Changing the setpoint to 1 now.")
+            value = 1
+        return super().set(value, *args, **kwargs)
+
 
 class Lakeshore336(PVPositioner):
     readback = Cpt(EpicsSignalRO, 'T-RB')
