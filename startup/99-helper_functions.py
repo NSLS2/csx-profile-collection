@@ -33,9 +33,16 @@ def ct_dark_all_patch(frames=None):
     yield from bps.sleep(.1)
 
 
-def pol_L(pol, epu_cal_offset=None):
+def pol_L(pol, epu_cal_offset=None, epu_table_number=None):
+    
 
     current_E = pgm.energy.setpoint.get()
+
+    if epu_table_number is None:
+        if pol == "H":
+            epu_table_number = 5
+        elif pol == "V":
+            epu_table_number = 6
     
     yield from bps.mv(diag6_pid.enable,0) # OFF epu_table & m1a feedback
     if epu_cal_offset is not None:
@@ -43,11 +50,11 @@ def pol_L(pol, epu_cal_offset=None):
         
     if pol == 'H':
         print(f'\n\n\tChanging phase to linear horizontal at THIS energy - {current_E:.2f}eV')
-        yield from bps.mv(epu2.table, 5)
+        yield from bps.mv(epu2.table, epu_table_number)
         yield from bps.mv(epu2.phase,0)
     elif pol == 'V':
         print(f'\n\n\tChanging phase to linear vertical at THIS energy - {current_E:.2f}eV')
-        yield from bps.mv(epu2.table, 6)
+        yield from bps.mv(epu2.table, epu_table_number)
         yield from bps.mv(epu2.phase,24.6)
     
     
