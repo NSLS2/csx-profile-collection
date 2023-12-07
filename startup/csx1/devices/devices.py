@@ -6,7 +6,7 @@ from ophyd import Component as Cpt
 from ophyd import FormattedComponent as FmtCpt
 from ophyd import DynamicDeviceComponent as DDC
 from ophyd import (EpicsMCA, EpicsDXP)
-from ophyd import DeviceStatus, OrderedDicti
+from ophyd import DeviceStatus, OrderedDict
 
 
 

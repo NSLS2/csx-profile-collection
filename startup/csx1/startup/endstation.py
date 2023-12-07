@@ -9,6 +9,8 @@ from ..devices.lakeshore import Lakeshore336
 from ..devices.eps import EPSTwoStateDevice
 from .tardis import tardis
 
+from ..devices.devices import PMACKiller
+
 # GVs
 tardis_gv = EPSTwoStateDevice('XF:23ID1-VA{Diag:06-GV:1}',                             
                           state1='Closed', state2='Open',             
