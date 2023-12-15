@@ -1,3 +1,5 @@
+print(f"Loading {__file__}...")
+
 from ophyd.scaler import ScalerCH
 from ophyd.device import (
     Component as C,

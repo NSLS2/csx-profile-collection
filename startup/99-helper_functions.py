@@ -1,3 +1,5 @@
+print(f"Loading {__file__}...")
+
 ## just adding functions we keep in defs.py so we don't need to keep dragging them around.  
 ##TODO evaluate ones for csxtools (because also good for db)
 ##TODO find better place inside of csx dir for these.

@@ -1,3 +1,5 @@
+print(f"Loading {__file__}...")
+
 # this is already done in nslsii.configure_base but being explicit here
 import bluesky.plans as bp
 import bluesky.plan_stubs as bps
