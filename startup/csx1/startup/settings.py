@@ -12,17 +12,17 @@ from .tardis import *
 #
 sd.monitors = []
 sd.flyers = []
-sd.baseline = [theta, delta, gamma, muR,
-               sx, say, saz,
-               cryoangle, sy, sz,
-               epu1, epu2,
-               slt1, slt2, slt3,
-               m1a, 
-               m3a,
-               #nanop, tardis,
-               tardis,
-               stemp, pgm,
-               inout, es_diag1_y, diag6_pid,]# diag6.stats1.centroid_threshold ] ###TODOrecord_threshold_for_every_scan_and_PV_put_complete OR probably should link to diag6_pid as RO
+# sd.baseline = [theta, delta, gamma, muR,
+#                sx, say, saz,
+#                cryoangle, sy, sz,
+#                epu1, epu2,
+#                slt1, slt2, slt3,
+#                m1a, 
+#                m3a,
+#                #nanop, tardis,
+#                tardis,
+#                stemp, pgm,
+#                inout, es_diag1_y, diag6_pid,]# diag6.stats1.centroid_threshold ] ###TODOrecord_threshold_for_every_scan_and_PV_put_complete OR probably should link to diag6_pid as RO
 
 #bec.disable_baseline() #no print to CLI, just save to datastore
 

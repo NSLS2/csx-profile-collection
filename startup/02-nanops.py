@@ -248,4 +248,4 @@ for cpt in ['tx', 'ty', 'tz', 'bx', 'by', 'bz']:
 # BlueskyMagics.positioners += [getattr(nanop, nn) for nn in nanop.component_names]
 
 #sd.baseline += [getattr(nanop, nn) for nn in nanop.component_names]
-sd.baseline += [nanop]
+# sd.baseline += [nanop]
