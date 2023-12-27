@@ -139,3 +139,10 @@ def mvslt3(size=None): #TODO make a better version for slt3.pinhole child
         x_pos, y_pos = holes[size]
         yield from bps.mv(slt3.x, x_pos, slt3.y, y_pos)
 
+
+# clear_suspenders can be triggered from the CLI using
+#     $ qserver function execute '{"name":"clear_suspenders"}'
+# or the equivalent function_execute API call
+def clear_suspenders():
+    print('clear_suspenders called')
+    RE.clear_suspenders()
