@@ -137,3 +137,35 @@ def mvslt3(size=None): #TODO make a better version for slt3.pinhole child
         x_pos, y_pos = holes[size]
         yield from bps.mv(slt3.x, x_pos, slt3.y, y_pos)
 
+
+def wait_for_peaks(pool_interval, timeout, peaks, peaks_fields=None):
+    """A helper bluesky plan to wait until the peak fields are calculated wth the specified pooling interval up to the maximum timeout value.
+
+    Parameters:
+    -----------
+    pool_interval : float
+        pooling interval in seconds.
+    timeout : float
+        maximum time to wait in seconds. The TimeoutError is raised if the time has passed.
+    peaks : bluesky.callbacks.best_effort.PeakResults
+        the PeakStats object.
+    peaks_fields : list or tuple
+        the PeakStats fields to wait for.
+    """
+    if peaks_fields is not None and type(peaks_fields) in [list, tuple]:
+        start_time = ttime.monotonic()
+        while True:
+            if timeout is not None:
+                if ttime.monotonic() - start_time > timeout:
+                    raise TimeoutError(f"Failed to get peaks calculated within {timeout} seconds")
+            all_fields = []
+            for field in peaks_fields:
+                if getattr(peaks, field):
+                    all_fields.append(True)
+                else:
+                    all_fields.append(False)
+            if all(all_fields):
+                print(f"Took {ttime.monotonic() - start_time:.6f} seconds to calculate peaks.")
+                break
+            else:
+                yield from bps.sleep(pool_interval)
