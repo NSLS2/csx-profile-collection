@@ -28,12 +28,12 @@ The pre-count number of images preserved.
         detectors = [fccd]
     revert = False
     try:
-        if num_images is None:
-            num_imgs_initial = yield from bps.rd(fccd.cam.num_images)
-            if num_imgs != num_imgs_initial:
-                revert = True
+        num_imgs_initial = yield from bps.rd(fccd.cam.num_images)
+        if num_imgs != num_imgs_initial and num_imgs is not None:
+            revert = True
+            #print('change to num-imgs')
             yield from bps.mv(fccd.cam.num_images, num_imgs)
-        yield from bp.count(detectors, md={'plan_name':'count_flatfield'}) #TODO add exception handling
+        yield from bp.count(detectors, md={'plan_name':'count_flatfield'}) #TODO add **kwargs for more metadata.
         if revert:
             #yield from bps.mv(fccd.cam.num_images, num_imgs_initial)
             yield from _ct_flatfield_cleanup(num_imgs_initial)
