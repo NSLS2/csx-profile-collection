@@ -12,8 +12,6 @@ from .tardis import *
 #
 sd.monitors = []
 sd.flyers = []
-print("+=" * 50)
-print(type(tardis), tardis)
 sd.baseline = [theta, delta, gamma, muR,
                sx, say, saz,
                cryoangle, sy, sz,
