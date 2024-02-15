@@ -6,7 +6,7 @@ from ..startup.optics import inout, diag6_pid
 from ..startup.detectors import fccd
 
 
-def ct_flatfield(num_imgs, detectors=None):
+def ct_flatfield(num_imgs=None, detectors=None):
     """Collect flatfield images for fccd with custom 'plan_name'='count_flatfield'.
 
 The pre-count number of images preserved.
@@ -27,13 +27,28 @@ The pre-count number of images preserved.
     if detectors is None:
         detectors = [fccd]
     revert = False
-    num_imgs_initial = yield from bps.rd(fccd.cam.num_images)
-    if num_imgs != num_imgs_initial:
-        revert = True
-        yield from bps.mv(fccd.cam.num_images, num_imgs)
-    yield from bp.count(detectors, md={'plan_name':'count_flatfield'}) #TODO add exception handling
-    if revert:
-        yield from bps.mv(fccd.cam.num_images, num_imgs_initial)
+    try:
+        num_imgs_initial = yield from bps.rd(fccd.cam.num_images)
+        if num_imgs != num_imgs_initial and num_imgs is not None:
+            revert = True
+            #print('change to num-imgs')
+            yield from bps.mv(fccd.cam.num_images, num_imgs)
+        yield from bp.count(detectors, md={'plan_name':'count_flatfield'}) #TODO add **kwargs for more metadata.
+        if revert:
+            #yield from bps.mv(fccd.cam.num_images, num_imgs_initial)
+            yield from _ct_flatfield_cleanup(num_imgs_initial)
+
+    except Exception:
+        if revert:
+            yield from _ct_flatfield_cleanup(num_imgs_initial)
+        raise
+    except KeyboardInterrupt:
+        if revert:
+            yield from _ct_flatfield_cleanup(num_imgs_initial)
+        raise
+
+def _ct_flatfield_cleanup(num_imgs_initial):
+    yield from bps.mv(fccd.cam.num_images, num_imgs_initial)
 
 def ct_dark(numim=None, detectors=None, gain_std=0):
     """Collect dark images for fccd and add metadata tag for dark and gain.
@@ -69,8 +84,8 @@ The pre-count shutter & gain states preserved.
         dark_sh_dict = {'Inserted': 'In', 'Not Inserted': 'Out'}
         gain_bit_dict = {0: 'auto', 1: 'x2', 2: 'x1'}
 
-        getit = diag6_pid.enable.read()
-        exitslit_pid_init_state = getit['diag6_pid_enable']['value'] #so we can turn it off and on
+        #getit = diag6_pid.enable.read()  #DIAG6-out remove line Aug 2024
+        #exitslit_pid_init_state = getit['diag6_pid_enable']['value'] #so we can turn it off and on #DIAG6-out remove line Aug 2024
 
 
         # TODO figureout kwargs and self to mkae up to line 44 a
@@ -91,16 +106,16 @@ The pre-count shutter & gain states preserved.
         #print('\tCurrent number of images = {}.\n'.format(oldnumim))
 
         #print('\tCurrent number of images = {}.\n'.format(oldnumim))
-        yield from bps.mv(diag6_pid.enable, 0) #turn feedback off to stop beam mis-steer
-        yield from bps.sleep(.3) #TODO needed to make sure that the readback is changed im time for numim
+        #yield from bps.mv(diag6_pid.enable, 0) #turn feedback off to stop beam mis-steer  #DIAG6-out remove line Aug 2024
+        #yield from bps.sleep(.3) #TODO needed to make sure that the readback is changed im time for numim #DIAG6-out remove line Aug 2024
 
         if numim is not None:
             #print('\tSetting to {} images.\n'.format(numim))
             yield from bps.abs_set(fccd.cam.num_images, numim, wait=True)
 
-        if exitslit_pid_init_state == 1:
-            yield from bps.mv(diag6_pid.enable, 0) #so beam doesn't fly away anymore
-        yield from bps.mv(inout, 'In')
+        #if exitslit_pid_init_state == 1: #DIAG6-out remove line Aug 2024
+        #    yield from bps.mv(diag6_pid.enable, 0) #so beam doesn't fly away anymore #DIAG6-out remove line Aug 2024
+        yield from bps.mv(inout, 'In') 
         #print('Beam blocked.')
         # This has to be 2 until we can selectively remove dark images
         # get_fastccd_images()  #TODO - fails here to _ct_dark ##TODO what is this? calling csxtools?
@@ -117,15 +132,15 @@ The pre-count shutter & gain states preserved.
         # Putting things back
         yield from _ct_dark_cleanup(oldnumim, gain_bit_dict,
                                     gain_state, dark_sh_dict,
-                                    dark_shutter_state, acq_time, exitslit_pid_init_state )
+                                    dark_shutter_state, acq_time, )#exitslit_pid_init_state )#DIAG6-out remove line Aug 2024
     except Exception:
         yield from _ct_dark_cleanup(oldnumim, gain_bit_dict, gain_state,
-                                    dark_sh_dict, dark_shutter_state,acq_time, exitslit_pid_init_state )
+                                    dark_sh_dict, dark_shutter_state,acq_time, )#exitslit_pid_init_state )#DIAG6-out remove line Aug 2024
         raise
     except KeyboardInterrupt:
         yield from _ct_dark_cleanup(oldnumim, gain_bit_dict,
                                     gain_state, dark_sh_dict,
-                                    dark_shutter_state, acq_time, exitslit_pid_init_state )
+                                    dark_shutter_state, acq_time, )#exitslit_pid_init_state )#DIAG6-out remove line Aug 2024
         raise
 
 
@@ -156,14 +171,14 @@ def _ct_dark(detectors, gain_bit_input, gain_bit_dict):
 
 
 def _ct_dark_cleanup(oldnumim, gain_bit_dict, gain_state,
-                     dark_sh_dict, dark_shutter_state,acq_time, exitslit_pid_init_state ):
+                     dark_sh_dict, dark_shutter_state,acq_time,):# exitslit_pid_init_state ):#DIAG6-out remove line Aug 2024
     print('\nReturning to intial conditions (pre-count).')
     yield from bps.abs_set(fccd.cam.num_images, oldnumim, wait=True)
 
     yield from bps.mv(fccd.cam.fcric_gain, gain_state)
     yield from bps.mv(inout, dark_sh_dict.get(dark_shutter_state))
-    if exitslit_pid_init_state == 1:
-        yield from bps.mv(diag6_pid.enable, 1)
+    #if exitslit_pid_init_state == 1: #DIAG6-out remove line Aug 2024
+    #    yield from bps.mv(diag6_pid.enable, 1) #DIAG6-out remove line Aug 2024
     yield from bps.sleep(acq_time*1)
     getit = fccd.cam.fcric_gain.read()
     gain_state_final = getit['fccd_cam_fcric_gain']['value']
@@ -201,8 +216,8 @@ def ct_dark_all(numim=None, detectors=None):
         dark_sh_dict = {'Inserted': 'In', 'Not Inserted': 'Out'}
         gain_bit_dict = {0: 'auto', 1: 'x2', 2: 'x1'}
 
-        getit = diag6_pid.enable.read()
-        exitslit_pid_init_state = getit['diag6_pid_enable']['value'] #so we can turn it off and on
+        #getit = diag6_pid.enable.read() #DIAG6-out remove line Aug 2024
+        #exitslit_pid_init_state = getit['diag6_pid_enable']['value'] #so we can turn it off and on #DIAG6-out remove line Aug 2024
 
 
         getit = fccd.cam.read_configuration()
@@ -218,15 +233,15 @@ def ct_dark_all(numim=None, detectors=None):
         #print('\tCurrent number of images = {}.\n'.format(oldnumim))
 
         yield from bps.sleep(.3)
-        yield from bps.mv(diag6_pid.enable, 0) #turn feedback off to stop beam mis-steer
+        #yield from bps.mv(diag6_pid.enable, 0) #turn feedback off to stop beam mis-steer #DIAG6-out remove line Aug 2024
 
         if numim is not None:
             #print('\tSetting to {} images.\n'.format(numim))
             yield from bps.abs_set(fccd.cam.num_images, numim, wait=True)
 
 
-        if exitslit_pid_init_state == 1:
-            yield from bps.mv(diag6_pid.enable, 0) #so beam doesn't fly away anymore
+        #if exitslit_pid_init_state == 1: #DIAG6-out remove line Aug 2024
+        #    yield from bps.mv(diag6_pid.enable, 0) #so beam doesn't fly away anymore #DIAG6-out remove line Aug 2024
         
         yield from bps.mv(inout, 'In')
         # This has to be 2 until we can selectively remove dark images
@@ -244,14 +259,14 @@ def ct_dark_all(numim=None, detectors=None):
         # Putting things back
         yield from _ct_dark_cleanup(oldnumim, gain_bit_dict,
                                     gain_state, dark_sh_dict,
-                                    dark_shutter_state,acq_time, exitslit_pid_init_state)
+                                    dark_shutter_state,acq_time, )#exitslit_pid_init_state)#DIAG6-out remove line Aug 2024
 
     except Exception:
         yield from _ct_dark_cleanup(oldnumim, gain_bit_dict,
                                     gain_state, dark_sh_dict,
-                                    dark_shutter_state, acq_time, exitslit_pid_init_state)
+                                    dark_shutter_state, acq_time, )#exitslit_pid_init_state)#DIAG6-out remove line Aug 2024
         raise
     except KeyboardInterrupt:
         yield from _ct_dark_cleanup(oldnumim, gain_bit_dict, gain_state,
-                                    dark_sh_dict, dark_shutter_state, acq_time, exitslit_pid_init_state)
+                                    dark_sh_dict, dark_shutter_state, acq_time, )#exitslit_pid_init_state)#DIAG6-out remove line Aug 2024
         raise

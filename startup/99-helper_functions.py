@@ -26,10 +26,10 @@ nap = bps.sleep
 
 def ct_dark_all_patch(frames=None):
     yield from mv(inout, "In")
-    yield from mv(diag6_pid.enable, 0)
+    #yield from mv(diag6_pid.enable, 0)  #DIAG6 NEW delete
     yield from ct_dark_all(frames)
     yield from mv(inout, "Out")
-    yield from mv(diag6_pid.enable, 1)
+    #yield from mv(diag6_pid.enable, 1)   #DIAG6 NEW delete
     yield from bps.sleep(.1)
 
 
@@ -116,8 +116,8 @@ def mvslt3(size=None): #TODO make a better version for slt3.pinhole child
     #x Mtr.OFF = 4.88, y Mtr.OFF = -0.95
     holes = {2000: ( -8.79, 0.00),    #TODO eventually have IOC to track these values
                50: (  0.00, 0.00),
-               20: (  8.799, 0.065),
-               10: ( 17.50,-0.045),} 
+               20: (  8.818, 0.065),
+               10: ( 17.534, -0.055),} 
     if size is None:
         xpos = np.round( slt3.x.read()['slt3_x']['value'], 2)
         ypos = np.round( slt3.y.read()['slt3_y']['value'], 2)
