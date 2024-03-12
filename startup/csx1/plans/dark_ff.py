@@ -35,7 +35,9 @@ The pre-count number of images preserved.
             yield from bps.mv(fccd.cam.num_images, num_imgs)
         uid = yield from bp.count(detectors, md={'plan_name':'count_flatfield'}) #TODO add **kwargs for more metadata.
         if uid is not None:
-            olog(f'Flatfield scan {uid}, flatfield with {num_imgs} images')
+            pass
+            print('record in olog if you need to')
+            #olog(f'Flatfield scan {uid}, flatfield with {num_imgs} images') ### not sure why this doesn't work??
         if revert:
             #yield from bps.mv(fccd.cam.num_images, num_imgs_initial)
             yield from _ct_flatfield_cleanup(num_imgs_initial)
