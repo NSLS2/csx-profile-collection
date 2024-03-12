@@ -125,9 +125,9 @@ def mvslt3(size=None): #TODO make a better version for slt3.pinhole child
         holes_reverse = dict((v, k) for k, v, in holes.items())
         try:
             _size_slt3_pinhole = holes_reverse[(_xpos, _ypos)]
-            print(f'{_size_slt3_pinhole}um pinhole at slt3: slt3.x = {xpos:.4f}, slt3.y = {ypos:.4f}') 
+            print(f'{_size_slt3_pinhole}um pinhole at slt3: slt3.x = {_xpos:.4f}, slt3.y = {_ypos:.4f}') 
         except KeyError:
-            print(f'Unknown configuration: slt3.x = {xpos:.4f}, slt3.y = {ypos:.4f}') 
+            print(f'Unknown configuration: slt3.x = {_xpos:.4f}, slt3.y = {_ypos:.4f}') 
 
     else:
         print('Moving to {} um slit 3'.format(size))
