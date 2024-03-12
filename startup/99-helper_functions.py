@@ -114,23 +114,20 @@ def md_info(default_md = RE.md):
 
 def mvslt3(size=None): #TODO make a better version for slt3.pinhole child
     #x Mtr.OFF = 4.88, y Mtr.OFF = -0.95
-    holes = {2000: ( -8.79, 0.00),    #TODO eventually have IOC to track these values
-               50: (  0.00, 0.00),
-               20: (  8.818, 0.065),
-               10: ( 17.534, -0.055),} 
+    holes = {2000: (  8.800,  0.000),    #TODO eventually have IOC to track these values
+               50: (  0.000,  0.000),
+               20: (- 8.800,  0.050),
+               10: (-17.500, -0.075),} 
     if size is None:
-        xpos = np.round( slt3.x.read()['slt3_x']['value'], 2)
-        ypos = np.round( slt3.y.read()['slt3_y']['value'], 2)
-        
-        #for h in holes:  #TODO - now reverse lookup so the motion part is better
-        #    #print('checking', xpos, ypos ,'for ', h[1])
-        #    if xpos == h[1] and ypos == h[2]:
-        #        print(f'{h[0]} um pinhole at slt3')
-        #        break
-            
-    elif size is None:
-        print(f'Unknown configuration: slt3.x = {xpos:.4f}, slt3.y = {ypos:.4f}') 
+        _xpos = round( slt3.x.read()['slt3_x']['value'], 3)
+        _ypos = round( slt3.y.read()['slt3_y']['value'], 3)
 
+        holes_reverse = dict((v, k) for k, v, in holes.items())
+        try:
+            _size_slt3_pinhole = holes_reverse[(_xpos, _ypos)]
+            print(f'{_size_slt3_pinhole}um pinhole at slt3: slt3.x = {xpos:.4f}, slt3.y = {ypos:.4f}') 
+        except KeyError:
+            print(f'Unknown configuration: slt3.x = {xpos:.4f}, slt3.y = {ypos:.4f}') 
 
     else:
         print('Moving to {} um slit 3'.format(size))
