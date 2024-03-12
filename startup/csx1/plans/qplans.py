@@ -73,6 +73,8 @@ def EfixQapprox(detectors, E_start, E_end, npts, E_shift=0, *,
            'plan_name': 'EfixQapprox',
            'plan_pattern': 'scan',
            'plan_pattern_args': pattern_args,
+           'num_points': npts,
+           'num_inervals': int(npts-1),
            # this is broken TODO do we need this?
            # 'plan_pattern_module': plan_patterns.__name__,
            'hints': {}}
@@ -109,7 +111,7 @@ def EfixQapprox(detectors, E_start, E_end, npts, E_shift=0, *,
 
 # TODO make this number of points to match bsui standard, not the
 # number of steps.
-def EfixQ(detectors, E_start, E_end, steps, E_shift=0, *,
+def EfixQ(detectors, E_start, E_end, npts, E_shift=0, *,
           per_step=None, md=None):
     '''Fixed Q energy scan based on an orientation matrix
 
@@ -125,7 +127,7 @@ def EfixQ(detectors, E_start, E_end, steps, E_shift=0, *,
         starting energy [eV]
     E_stop : float
         stoping energy [eV]
-    steps : integer
+    npts : integer
         number of points
     E_shift : float
         shift in energy calibration relative to orientation matrix (i.e, )
@@ -140,23 +142,23 @@ def EfixQ(detectors, E_start, E_end, steps, E_shift=0, *,
     x_motor = pgm.energy  # This is CSX-1's mono motor name for energy
     x_start = E_start
     pattern_args = dict(x_motor=x_motor, x_start=E_start,
-                        steps=steps, E_shift=E_shift)
+                        steps=npts, E_shift=E_shift)
 
     E_init = x_motor.setpoint.get()
     tardis.calc.energy = (x_motor.setpoint.get() + E_shift)/1000
     h_init = tardis.position.h
     k_init = tardis.position.k
     l_init = tardis.position.l
-    delta_init = delta.user_readback.get()
-    theta_init = theta.user_readback.get()
-    gamma_init = gamma.user_readback.get()
+    delta_init = delta.user_setpoint.get()
+    theta_init = theta.user_setpoint.get()
+    gamma_init = gamma.user_setpoint.get()
 
     deltas = []
     thetas = []
     gammas = []
 
     # TODO no plus one, use npts as arugument.
-    E_vals = np.linspace(E_start, E_end, steps+1)
+    E_vals = np.linspace(E_start, E_end, npts)
     x_range = max(E_vals) - min(E_vals)
 
     for E_val in E_vals:
@@ -183,6 +185,8 @@ def EfixQ(detectors, E_start, E_end, steps, E_shift=0, *,
            'plan_name': 'EfixQ',
            'plan_pattern': 'scan',
            'plan_pattern_args': pattern_args,
+           'num_points': npts,
+           'num_inervals': int(npts-1),
            # this is broken TODO do we need this
            # 'plan_pattern_module': plan_patterns.__name__,
            'hints': {}}
