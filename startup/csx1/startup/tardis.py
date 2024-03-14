@@ -62,6 +62,10 @@ class Tardis(E6C):  #this works for mu=0
 # tardis = Tardis('', name='tardis', calc_inst=tardis_calc)
 tardis = Tardis('', name='tardis')
 
+tardis.theta.user_offset.kind = 'config' #hot fix https://github.com/bluesky/bluesky/issues/1665
+tardis.delta.user_offset.kind = 'config'
+tardis.gamma.user_offset.kind = 'config'
+
 # re-map Tardis' axis names onto what an E6C expects
 name_map = {'mu': 'theta', 'omega': 'mu', 'chi': 'chi', 'phi': 'phi', 'gamma': 'delta', 'delta': 'gamma'}
 
