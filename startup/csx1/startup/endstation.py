@@ -2,6 +2,8 @@ from ophyd import (PVPositioner, EpicsMotor, EpicsSignal, EpicsSignalRO,
                    PVPositionerPC, Device)
 from ophyd import Component as Cpt
 
+import bluesky.plan_stubs as bps
+
 from ..devices.optics import (SamplePosVirtualMotor, Cryoangle,
                              Nanopositioner)
 
