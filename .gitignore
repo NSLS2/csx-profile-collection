@@ -60,7 +60,8 @@ docs/_build/
 # PyBuilder
 target/
 
-
+# sqlite history files after we tried to seperate histories based on workstation
+*.sqlite
 
 ### Python template
 # Byte-compiled / optimized / DLL files

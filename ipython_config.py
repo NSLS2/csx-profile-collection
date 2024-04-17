@@ -1,4 +1,6 @@
 # Configuration file for ipython.
+import os
+import socket
 
 c = get_config()
 
@@ -388,6 +390,14 @@ c.TerminalInteractiveShell.autocall = 0
 # no stored history, no SQLite connection, and no background saving thread.
 # This may be necessary in some threaded environments where IPython is embedded.
 # c.HistoryManager.enabled = True
+
+
+# Modify history to be specific to the hostname
+profile_dir = os.path.dirname(__file__)
+hostname = socket.gethostname().split(".")[0]
+history_file_path = os.path.join(profile_dir, f"{hostname}_history.sqlite")
+c.HistoryManager.hist_file = history_file_path
+
 
 #------------------------------------------------------------------------------
 # ProfileDir configuration
