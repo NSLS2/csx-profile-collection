@@ -17,10 +17,10 @@ sd.baseline = [theta, delta, gamma, muR,
                cryoangle, sy, sz,
                epu1, epu2,
                slt1, slt2, slt3,
-               m1a, 
+               m1a,
                m3a,
                #nanop, tardis,
-               tardis,
+               tardis, # unable to reproduce error: Plan failed: Type is not JSON serializable: _ResultTuple
                stemp, pgm,
                inout, es_diag1_y, diag6_pid,]# diag6.stats1.centroid_threshold ] ###TODOrecord_threshold_for_every_scan_and_PV_put_complete OR probably should link to diag6_pid as RO
 
