@@ -44,9 +44,10 @@ import nslsii
 from IPython import get_ipython
 from bluesky.utils import PersistentDict
 from pathlib import Path
+from csx1.analysis.callbacks import BECwithTicks
 
 ip = get_ipython()
-nslsii.configure_base(ip.user_ns, 'csx', publish_documents_with_kafka=True)
+nslsii.configure_base(ip.user_ns, 'csx', publish_documents_with_kafka=True, bec=False)
 nslsii.configure_olog(ip.user_ns)
 
 # Commenting out the DAMA-suggested location
@@ -55,6 +56,9 @@ nslsii.configure_olog(ip.user_ns)
 # runengine_metadata_dir = appdirs.user_data_dir(appname="bluesky") / Path("runengine-metadata")
 runengine_metadata_dir = os.path.expanduser("/nsls2/data/csx/shared/config/RE-metadata")
 RE.md = PersistentDict(runengine_metadata_dir)
+
+bec = BECwithTicks()
+RE.subscribe(bec)
 
 
 from csx1.startup import *
