@@ -58,6 +58,7 @@ runengine_metadata_dir = os.path.expanduser("/nsls2/data/csx/shared/config/RE-me
 RE.md = PersistentDict(runengine_metadata_dir)
 
 bec = BECwithTicks()
+peaks = bec.peaks  # just as alias for less typing
 RE.subscribe(bec)
 
 
