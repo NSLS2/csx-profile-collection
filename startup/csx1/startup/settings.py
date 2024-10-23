@@ -35,6 +35,8 @@ for i in [2, 3, 4, 5]:
     # getattr(sclr.channels, f'chan{i}').kind = 'normal' will remove the
     # hinted fields from LivePlot and LiveTable.
 
+
+
 def relabel_fig(fig, new_label):
     fig.set_label(new_label)
     fig.canvas.manager.set_window_title(fig.get_label())
@@ -42,6 +44,7 @@ def relabel_fig(fig, new_label):
 # fccd.hints = {'fields': ['fccd_stats1_total']}
 for i in [1, 2, 3, 4, 5]:
     getattr(fccd, f'stats{i}').total.kind = 'hinted'
+fccd.mcs.read_attrs = fccd.mcs.read_attrs[0:7] #silences the channels we do not use (7-32)
 
 # cam_dif.hints = {'fields' : ['cam_dif_stats3_total','cam_dif_stats1_total']}
 for i in [1, 3]:
