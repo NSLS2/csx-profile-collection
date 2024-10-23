@@ -184,3 +184,19 @@ def wait_for_peaks(pool_interval, timeout, peaks, peaks_fields=None):
                 break
             else:
                 yield from bps.sleep(pool_interval)
+
+def _block_beam(block_beam_bit): ##TODO move this to a child of inout
+    if block_beam_bit: 
+        if inout.status.get() =="Not Inserted":
+            yield from mv(inout, "In")
+    else:
+        if inout.status.get() =="Inserted":
+            yield from mv(inout, "Out")
+
+def block_beam():
+    yield from _block_beam(1)
+def show_beam():
+    yield from _block_beam(0)
+
+beam_block = block_beam
+beam_show = show_beam
