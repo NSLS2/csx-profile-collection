@@ -10,7 +10,6 @@ from ophyd.areadetector.plugins import PluginBase, ProcessPlugin, HDF5Plugin_V22
 from ophyd import Component as Cpt
 from ophyd.device import FormattedComponent as FCpt
 from ophyd import AreaDetector
-from ophyd.utils import set_and_wait
 import time as ttime
 import itertools
 
@@ -22,6 +21,10 @@ from .scaler import StruckSIS3820MCS
 import numpy as np
 
 from .stats_plugin import StatsPluginCSX
+
+
+DEFAULT_TIMEOUT = 10  # Seconds
+
 
 ##TODO why AreaDetector and not ProsilicaDetector for StandardCam Class below
 class StandardCam(SingleTrigger, AreaDetector):#TODO is there something more standard for prosilica? seems only used on prosilica. this does stats, but no image saving (unsure if easy to configure or not and enable/disable)
@@ -238,7 +241,7 @@ class ProductionCamBase(DetectorBase):
 
         # we need to take the detector out of acquire mode
         self._original_vals[self.cam.acquire] = self.cam.acquire.get()
-        set_and_wait(self.cam.acquire, 0)
+        self.cam.acquire.set(0).wait(DEFAULT_TIMEOUT)
         # but then watch for when detector state
         while self.cam.detector_state.get(as_string=True) != 'Idle':
             ttime.sleep(.01)
@@ -281,7 +284,7 @@ class ProductionCamStandard(SingleTrigger, ProductionCamBase):
 
     def pause(self):
         set_val = 0
-        set_and_wait(self.hdf5.capture, set_val)
+        self.hdf5.capture.set(set_val).wait(DEFAULT_TIMEOUT)
         #val = self.hdf5.capture.get()
         ## Julien fix to ensure these are set correctly
         #print("pausing FCCD")
@@ -293,7 +296,7 @@ class ProductionCamStandard(SingleTrigger, ProductionCamBase):
 
     def resume(self):
         set_val = 1
-        set_and_wait(self.hdf5.capture, set_val)
+        self.hdf5.capture.set(set_val).wait(DEFAULT_TIMEOUT)
         self.hdf5._point_counter = itertools.count()
         # The AD HDF5 plugin bumps its file_number and starts writing into a
         # *new file* because we toggled capturing off and on again.
