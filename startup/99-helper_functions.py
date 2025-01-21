@@ -193,10 +193,10 @@ Parameters:
 block_beam_bit : int, bool
 """
     if block_beam_bit: 
-        if inout.status.get() =="Not Inserted":
+        if inout.status.get() == "Not Inserted":
             yield from mv(inout, "In")
     else:
-        if inout.status.get() =="Inserted":
+        if inout.status.get() == "Inserted":
             yield from mv(inout, "Out")
 
 def block_beam():
