@@ -200,6 +200,7 @@ block_beam_bit : int, bool
             yield from mv(inout, "Out")
 
 def block_beam():
+"""Helper plan to move inout to block beam. Aliased to beam_block()."""
     yield from _block_beam(1)
 def show_beam():
     yield from _block_beam(0)
