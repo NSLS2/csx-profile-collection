@@ -34,7 +34,7 @@ def ct_dark_all_patch(frames=None):
 
 
 def pol_L(pol, epu_cal_offset=None, epu_table_number=None):
-    """A helper bluesky plan to change vertical and horizontal poloarization
+    """A helper bluesky plan to change vertical and horizontal polarization
 
     Parameters:
     -----------
