@@ -41,7 +41,7 @@ def pol_L(pol, epu_cal_offset=None, epu_table_number=None):
     pol : string
         'H' or 'V' for horizontal (epu phase = 0) or vertical (epu phase = 24.6) polarization for CSX's undulator
     epu_cal_offset : float
-        offset to tune the precice epu gap for a paricular energy using a particular epu calibration table
+        offset to tune the precise epu gap for a particular energy using a particular epu calibration table
     epu_table_number : int
         epu calibration table
     """    
