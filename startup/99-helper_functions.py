@@ -201,7 +201,7 @@ def _block_beam(block_beam_bit): ##TODO move this to a child of inout
             yield from mv(inout, "Out")
 
 def block_beam():
-"""Helper plan to move inout to block beam. Aliased to beam_block()."""
+    """Helper plan to move inout to block beam. Aliased to beam_block()."""
     yield from _block_beam(1)
 
 def show_beam():
