@@ -34,7 +34,17 @@ def ct_dark_all_patch(frames=None):
 
 
 def pol_L(pol, epu_cal_offset=None, epu_table_number=None):
-    
+    """A helper bluesky plan to change vertical and horizontal polarization
+
+    Parameters:
+    -----------
+    pol : string
+        'H' or 'V' for horizontal (epu phase = 0) or vertical (epu phase = 24.6) polarization for CSX's undulator
+    epu_cal_offset : float
+        offset to tune the precise epu gap for a particular energy using a particular epu calibration table
+    epu_table_number : int
+        epu calibration table
+    """    
 
     current_E = pgm.energy.setpoint.get()
 
@@ -59,7 +69,7 @@ def pol_L(pol, epu_cal_offset=None, epu_table_number=None):
     
     
     yield from bps.mv(diag6_pid.enable,1) # finepitch feedback ON
-    yield from bps.sleep(1)
+    yield from bps.sleep(0.1)
 
 def pol_C(pol, epu_cal_offset=-267, epu_phase=None):
     '''This circular polarization change uses the horizontal polarization table and will force this table.  
@@ -112,7 +122,15 @@ def md_info(default_md = RE.md):
         print(f'    {info:_<30} : {val}')
     print('\n\n Use \'md_info()\' or \'RE.md\' to inspect again.')
 
-def mvslt3(size=None): #TODO make a better version for slt3.pinhole child
+def mvslt3(size=None): #TODO make a better version for slt3.pinhole child    
+    """A helper bluesky plan to move to different pinhole diameters for slit 3.
+
+    Parameters:
+    -----------
+    size : int
+        pinhole size in microns.  options are 2000, 50, 20, and 10.  if None, then the current pinhole is returned.
+
+    """
     #x Mtr.OFF = 4.88, y Mtr.OFF = -0.95
     holes = {2000: (  8.800,  0.000),    #TODO eventually have IOC to track these values
                50: (  0.000,  0.000),
@@ -166,3 +184,30 @@ def wait_for_peaks(pool_interval, timeout, peaks, peaks_fields=None):
                 break
             else:
                 yield from bps.sleep(pool_interval)
+
+def _block_beam(block_beam_bit): ##TODO move this to a child of inout
+    """Protective inout function that only moves if necessary.
+    The EPS will always actuate on bps.mv.
+
+    Parameters:
+    ------------
+    block_beam_bit : int, bool
+    """
+    if block_beam_bit: 
+        if inout.status.get() == "Not Inserted":
+            yield from mv(inout, "In")
+    else:
+        if inout.status.get() == "Inserted":
+            yield from mv(inout, "Out")
+
+def block_beam():
+    """Helper plan to move inout to block beam. Aliased to beam_block()."""
+    yield from _block_beam(1)
+
+def show_beam():
+    """Helper plan to move inout to show beam."""
+    yield from _block_beam(0)
+
+# Convenience aliases: Don't need to memorize order of noun/verb
+beam_block = block_beam
+beam_show = show_beam
