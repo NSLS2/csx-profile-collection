@@ -186,12 +186,13 @@ def wait_for_peaks(pool_interval, timeout, peaks, peaks_fields=None):
                 yield from bps.sleep(pool_interval)
 
 def _block_beam(block_beam_bit): ##TODO move this to a child of inout
-"""Protective inout function that only moves if necessary. The EPS will always actuate on bps.mv.
+    """Protective inout function that only moves if necessary.
+    The EPS will always actuate on bps.mv.
 
-Parameters:
-------------
-block_beam_bit : int, bool
-"""
+    Parameters:
+    ------------
+    block_beam_bit : int, bool
+    """
     if block_beam_bit: 
         if inout.status.get() == "Not Inserted":
             yield from mv(inout, "In")
