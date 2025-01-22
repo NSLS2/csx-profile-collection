@@ -205,7 +205,7 @@ def block_beam():
     yield from _block_beam(1)
 
 def show_beam():
-"""Helper plan to move inout to show beam."""
+    """Helper plan to move inout to show beam."""
     yield from _block_beam(0)
 
 # Convenience aliases: Don't need to memorize order of noun/verb
