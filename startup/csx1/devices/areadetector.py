@@ -180,6 +180,16 @@ class HDF5PluginWithFileStore(HDF5PluginSWMR, FileStoreHDF5IterativeWrite):
         return self._ret
 
 
+class AxisCam(StandardCam):
+    # hdf5 = Cpt(HDF5PluginWithFileStorePlain,
+    #           suffix='HDF1:',
+    #           write_path_template='/nsls2/data/csx/legacy/axis_data/hdf5/%Y/%m/%d',
+    #           root='/nsls2/data/csx/legacy')
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # self.hdf5.kind = "normal"
+
+
 class FCCDCam(AreaDetectorCam):
     sdk_version = Cpt(EpicsSignalRO, 'SDKVersion_RBV')
     firmware_version = Cpt(EpicsSignalRO, 'FirmwareVersion_RBV')

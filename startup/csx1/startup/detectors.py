@@ -18,7 +18,8 @@ from ..devices.areadetector import (StandardCam, NoStatsCam,
                                     ProductionCamTriggered,
                                     StageOnFirstTrigger,
                                     MonitorStatsCam,
-                                    StandardProsilicaWithHDF5, StandardProsilicaWithTIFF) #TODOpmab - added to try to save (inspired from SIX)
+                                    StandardProsilicaWithHDF5, StandardProsilicaWithTIFF, #TODOpmab - added to try to save (inspired from SIX)
+                                    AxisCam) 
 
 from ..startup import db
 
@@ -78,6 +79,8 @@ cam_slt3 = StandardCam('XF:23ID1-ES{Dif-Cam:Beam}', name='cam_slt3')
 _setup_stats(cam_slt3)
 #_setup_stats_cen(cam_slt3_hdf5)
 
+axis1 = AxisCam("Axis1:", name='axis1')
+_setup_stats(axis1)
 
 # Setup on 2018/03/16 for correlating fCCD and sample position - worked 
 # DON'T NEED STATS to take pictures of sample/optics
