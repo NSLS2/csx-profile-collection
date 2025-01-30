@@ -27,6 +27,7 @@ def _setup_stats(cam_in):
     for k in (f'stats{j}' for j in range(1, 6)):
         cam_in.read_attrs.append(k)
         getattr(cam_in, k).read_attrs = ['total']
+        getattr(cam_in, k).total.kind = 'hinted'
 
 
 
@@ -79,7 +80,7 @@ cam_slt3 = StandardCam('XF:23ID1-ES{Dif-Cam:Beam}', name='cam_slt3')
 _setup_stats(cam_slt3)
 #_setup_stats_cen(cam_slt3_hdf5)
 
-axis1 = AxisCam("Axis1:", name='axis1')
+axis1 = AxisCam("XF:23ID1-ES{Det-Axis:1}", name='axis1')
 _setup_stats(axis1)
 
 # Setup on 2018/03/16 for correlating fCCD and sample position - worked 

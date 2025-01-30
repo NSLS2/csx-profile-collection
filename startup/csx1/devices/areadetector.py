@@ -38,8 +38,8 @@ class StandardCam(SingleTrigger, AreaDetector):#TODO is there something more sta
     roi3 = Cpt(ROIPlugin, 'ROI3:')
     roi4 = Cpt(ROIPlugin, 'ROI4:')
     #proc1 = Cpt(ProcessPlugin, 'Proc1:')
-    trans1 = Cpt(TransformPlugin, 'Trans1:')
-    over1 = Cpt(OverlayPlugin, 'Over1:') ##for crosshairs in tiff
+    #trans1 = Cpt(TransformPlugin, 'Trans1:')
+    #over1 = Cpt(OverlayPlugin, 'Over1:') ##for crosshairs in tiff
 
 class NoStatsCam(SingleTrigger, AreaDetector):
     pass
@@ -112,7 +112,6 @@ class StandardProsilicaWithHDF5(StandardCam):
         self.hdf5.kind = "normal"
 
 
-
 class TIFFPluginWithFileStore(TIFFPlugin_V22, FileStoreTIFFIterativeWrite): #RIPPED OFF FROM CHX because mutating H5 has wrong shape for color img
     """Add this as a component to detectors that write TIFFs."""
 
@@ -181,13 +180,17 @@ class HDF5PluginWithFileStore(HDF5PluginSWMR, FileStoreHDF5IterativeWrite):
 
 
 class AxisCam(StandardCam):
-    # hdf5 = Cpt(HDF5PluginWithFileStorePlain,
-    #           suffix='HDF1:',
-    #           write_path_template='/nsls2/data/csx/legacy/axis_data/hdf5/%Y/%m/%d',
-    #           root='/nsls2/data/csx/legacy')
+    hdf5 = Cpt(HDF5PluginWithFileStorePlain,
+              suffix='HDF1:',
+              read_path_template='/nsls2/data/csx/legacy/axis_data/hdf5/%Y/%m/%d',
+              root='/nsls2/data/csx/legacy/axis_data/hdf5',
+              write_path_template='Z:/hdf5/%Y/%m/%d/', # From the IOC which is Windows
+              path_semantics='windows')
+    # over1 = Cpt(OverlayPlugin, 'Over1:')
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # self.hdf5.kind = "normal"
+        self.hdf5.kind = "normal"
+        self.hdf5.file_path.path_semantics = 'nt' # windows path semantics
 
 
 class FCCDCam(AreaDetectorCam):
