@@ -37,9 +37,25 @@ class StandardCam(SingleTrigger, AreaDetector):#TODO is there something more sta
     roi2 = Cpt(ROIPlugin, 'ROI2:')
     roi3 = Cpt(ROIPlugin, 'ROI3:')
     roi4 = Cpt(ROIPlugin, 'ROI4:')
+    proc1 = Cpt(ProcessPlugin, 'Proc1:')
+    trans1 = Cpt(TransformPlugin, 'Trans1:')
+    #over1 = Cpt(OverlayPlugin, 'Over1:') ##for crosshairs in tiff
+
+
+class StandardAxisCam(SingleTrigger, AreaDetector):#TODO is there something more standard for prosilica? seems only used on prosilica. this does stats, but no image saving (unsure if easy to configure or not and enable/disable)
+    stats1 = Cpt(StatsPlugin, 'Stats1:')
+    stats2 = Cpt(StatsPlugin, 'Stats2:')
+    stats3 = Cpt(StatsPlugin, 'Stats3:')
+    stats4 = Cpt(StatsPlugin, 'Stats4:')
+    stats5 = Cpt(StatsPlugin, 'Stats5:')
+    roi1 = Cpt(ROIPlugin, 'ROI1:')
+    roi2 = Cpt(ROIPlugin, 'ROI2:')
+    roi3 = Cpt(ROIPlugin, 'ROI3:')
+    roi4 = Cpt(ROIPlugin, 'ROI4:')
     #proc1 = Cpt(ProcessPlugin, 'Proc1:')
     #trans1 = Cpt(TransformPlugin, 'Trans1:')
     #over1 = Cpt(OverlayPlugin, 'Over1:') ##for crosshairs in tiff
+
 
 class NoStatsCam(SingleTrigger, AreaDetector):
     pass
@@ -179,18 +195,78 @@ class HDF5PluginWithFileStore(HDF5PluginSWMR, FileStoreHDF5IterativeWrite):
         return self._ret
 
 
-class AxisCam(StandardCam):
+class AxisCam(StandardAxisCam):
     hdf5 = Cpt(HDF5PluginWithFileStorePlain,
               suffix='HDF1:',
               read_path_template='/nsls2/data/csx/legacy/axis_data/hdf5/%Y/%m/%d',
               root='/nsls2/data/csx/legacy/axis_data/hdf5',
-              write_path_template='Z:/hdf5/%Y/%m/%d/', # From the IOC which is Windows
+              write_path_template='Z:/hdf5/%Y/%m/%d', # From the IOC which is Windows
               path_semantics='windows')
     # over1 = Cpt(OverlayPlugin, 'Over1:')
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.hdf5.kind = "normal"
         self.hdf5.file_path.path_semantics = 'nt' # windows path semantics
+
+    # def make_data_key(self):
+    #     """
+    #     Override the base class to get the array shape from the HDF5 plugin.
+
+    #     The base class gets the shape from self.cam.array_size.  This does not
+    #     correctly represent the shape of the array written by the custom HDF5
+    #     plugin used on this detector, so we need to get the shape from the
+    #     plugin.
+    #     """
+    #     source = 'PV:{}'.format(self.prefix)
+    #     # This shape is expected to match arr.shape for the array.
+    #     shape = (
+    #         self.cam.num_images.get(),
+    #         self.hdf5.height.get(),
+    #         self.hdf5.width.get(),
+    #     )
+    #     return dict(shape=shape, source=source, dtype='array',
+    #                 external='FILESTORE:')
+
+    # def stop(self):
+    #     self.hdf5.capture.put(0)
+    #     return super().stop()
+
+    # def pause(self):
+    #     set_val = 0
+    #     self.hdf5.capture.set(set_val).wait(DEFAULT_TIMEOUT)
+    #     #val = self.hdf5.capture.get()
+    #     ## Julien fix to ensure these are set correctly
+    #     #print("pausing FCCD")
+    #     #while (np.abs(val-set_val) > 1e-6):
+    #         #self.hdf5.capture.put(set_val)
+    #         #val = self.hdf5.capture.get()
+
+    #     return super().pause()
+
+    # def resume(self):
+    #     set_val = 1
+    #     self.hdf5.capture.set(set_val).wait(DEFAULT_TIMEOUT)
+    #     self.hdf5._point_counter = itertools.count()
+    #     # The AD HDF5 plugin bumps its file_number and starts writing into a
+    #     # *new file* because we toggled capturing off and on again.
+    #     # Generate a new Resource document for the new file.
+
+    #     # grab the stashed result from make_filename
+    #     filename, read_path, write_path = self.hdf5._ret
+    #     self.hdf5._fn = self.hdf5.file_template.get() % (read_path,
+    #                                            filename,
+    #                                            self.hdf5.file_number.get() - 1)
+    #                                            # file_number is *next* iteration
+    #     res_kwargs = {'frame_per_point': self.hdf5.get_frames_per_point()}
+    #     self.hdf5._generate_resource(res_kwargs)
+    #     # can add this if we're not confident about setting...
+    #     #val = self.hdf5.capture.get()
+    #     #print("resuming FCCD")
+    #     #while (np.abs(val-set_val) > 1e-6):
+    #         #self.hdf5.capture.put(set_val)
+    #         #val = self.hdf5.capture.get()
+    #     #print("Success")
+    #     return super().resume()
 
 
 class FCCDCam(AreaDetectorCam):
