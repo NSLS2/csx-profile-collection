@@ -1,4 +1,4 @@
-from ophyd import (EpicsScaler, EpicsSignal, EpicsSignalRO, Device,
+from ophyd import (EpicsScaler, EpicsSignal, EpicsSignalRO, Device, BlueskyInterface,
                    SingleTrigger, HDF5Plugin, ImagePlugin, StatsPlugin,
                    ROIPlugin, TransformPlugin, OverlayPlugin, ProsilicaDetector, TIFFPlugin)
 
@@ -7,7 +7,7 @@ from ophyd.areadetector.detectors import DetectorBase
 from ophyd.areadetector.filestore_mixins import FileStoreHDF5IterativeWrite, FileStoreTIFFIterativeWrite
 from ophyd.areadetector import ADComponent, EpicsSignalWithRBV
 from ophyd.areadetector.plugins import PluginBase, ProcessPlugin, HDF5Plugin_V22, TIFFPlugin_V22
-from ophyd import Component as Cpt
+from ophyd import Component as Cpt, DeviceStatus
 from ophyd.device import FormattedComponent as FCpt
 from ophyd import AreaDetector
 import time as ttime
@@ -24,6 +24,84 @@ from .stats_plugin import StatsPluginCSX
 
 
 DEFAULT_TIMEOUT = 10  # Seconds
+
+class ContinuousAcquisitionTrigger(BlueskyInterface):
+    """
+    This trigger mixin class records images when it is triggered.
+
+    It expects the detector to *already* be acquiring, continously.
+    """
+    def __init__(self, *args, plugin_name=None, image_name=None, **kwargs):
+        if plugin_name is None:
+            raise ValueError("plugin name is a required keyword argument")
+        super().__init__(*args, **kwargs)
+        self._plugin = getattr(self, plugin_name)
+        if image_name is None:
+            image_name = '_'.join([self.name, 'image'])
+        self._plugin.stage_sigs[self._plugin.auto_save] = 'No'
+        self.cam.stage_sigs[self.cam.image_mode] = 'Continuous'
+        self._plugin.stage_sigs[self._plugin.file_write_mode] = 'Capture'
+        self._image_name = image_name
+        self._status = None
+        self._num_captured_signal = self._plugin.num_captured
+        self._num_captured_signal.subscribe(self._num_captured_changed)
+        self._save_started = False
+
+    def stage(self):
+        if self.cam.acquire.get() != 1:
+             ##foolishly added by DO
+             try:
+                self.cam.acquire.put(1)
+                print ("The detector wasn't properly acquiring :(")
+                ttime.sleep(1)
+                print ("Don't worry, I probably fixed it for you!")
+             except:
+                 raise RuntimeError("The ContinuousAcuqisitionTrigger expects "
+                                    "the detector to already be acquiring."
+                                    "I was unable to fix it, please restart the ui.") #new line, DO
+             #old style, simple runtime error (no rescue attempt)
+             #raise RuntimeError("The ContinuousAcuqisitionTrigger expects "
+             #                   "the detector to already be acquiring.")
+             
+        #if we get this far, we can now stage the detector. 
+        super().stage()
+        
+        # put logic to look up proper dark frame
+        # die if none is found
+
+    def trigger(self):
+        "Trigger one acquisition."
+        if not self._staged:
+            raise RuntimeError("This detector is not ready to trigger."
+                               "Call the stage() method before triggering.")
+        self._save_started = False
+        self._status = DeviceStatus(self)
+        self._desired_number_of_images = self.cam.num_images.get()
+        self._plugin.num_capture.put(self._desired_number_of_images)
+        self.dispatch(self._image_name, ttime.time())
+        #self.generate_datum(self._image_name, ttime.time())
+        # reset the proc buffer, this needs to be generalized
+        #self.proc.reset_filter.put(1)
+        self._plugin.capture.put(1)  # Now the plugin is capturing.
+        return self._status
+
+    def _num_captured_changed(self, value=None, old_value=None, **kwargs):
+        "This is called when the 'acquire' signal changes."
+        if self._status is None:
+            return
+        if value == self._desired_number_of_images:
+            # This is run on a thread, so exceptions might pass silently.
+            # Print and reraise so they are at least noticed.
+            try:
+                self._plugin.write_file.put(1)
+            except Exception as e:
+                print(e)
+                raise
+            self._save_started = True
+        if value == 0 and self._save_started:
+            self._status._finished()
+            self._status = None
+            self._save_started = False
 
 
 ##TODO why AreaDetector and not ProsilicaDetector for StandardCam Class below
@@ -42,7 +120,26 @@ class StandardCam(SingleTrigger, AreaDetector):#TODO is there something more sta
     #over1 = Cpt(OverlayPlugin, 'Over1:') ##for crosshairs in tiff
 
 
+class AxisDetectorCam(AreaDetectorCam):
+    wait_for_plugins = Cpt(EpicsSignal, "WaitForPlugins", string=True, kind="hinted")
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.stage_sigs["wait_for_plugins"] = "Yes"
+
+    def ensure_nonblocking(self):
+        self.stage_sigs["wait_for_plugins"] = "Yes"
+        for c in self.parent.component_names:
+            cpt = getattr(self.parent, c)
+            if cpt is self:
+                continue
+            if hasattr(cpt, "ensure_nonblocking"):
+                cpt.ensure_nonblocking()
+
+
+# TODO: Change to ContinuousTrigger
 class StandardAxisCam(SingleTrigger, AreaDetector):#TODO is there something more standard for prosilica? seems only used on prosilica. this does stats, but no image saving (unsure if easy to configure or not and enable/disable)
+    cam = Cpt(AxisDetectorCam, "cam1:")
     stats1 = Cpt(StatsPlugin, 'Stats1:')
     stats2 = Cpt(StatsPlugin, 'Stats2:')
     stats3 = Cpt(StatsPlugin, 'Stats3:')
@@ -206,8 +303,7 @@ class AxisCam(StandardAxisCam):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.hdf5.kind = "normal"
-        self.hdf5.file_path.path_semantics = 'nt' # windows path semantics
-
+        self.hdf5.file_path.path_semantics = "nt" # windows path semantics
     # def make_data_key(self):
     #     """
     #     Override the base class to get the array shape from the HDF5 plugin.
