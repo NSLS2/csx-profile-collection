@@ -62,5 +62,4 @@ peaks = bec.peaks  # just as alias for less typing
 RE.subscribe(bec)
 
 
-
 from csx1.startup import *
