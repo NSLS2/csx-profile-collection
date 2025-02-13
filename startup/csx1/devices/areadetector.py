@@ -119,7 +119,13 @@ class AxisDetectorCam(AreaDetectorCam):
     """
     Custom AxisDetectorCam class to include a `wait_for_plugins` signal.
     """
+    _default_configuration_attrs = AreaDetectorCam._default_configuration_attrs + (
+        "gain",
+        "tec"
+    )
     wait_for_plugins = Cpt(EpicsSignal, "WaitForPlugins", string=True, kind="hinted")
+    gain = Cpt(EpicsSignal, "GainMode", string=True, kind="config")
+    tec = Cpt(EpicsSignal, "TEC", string=True, kind="config")
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -147,10 +153,9 @@ class StandardAxisCam(SingleTrigger, AreaDetector):
     roi2 = Cpt(ROIPlugin, 'ROI2:')
     roi3 = Cpt(ROIPlugin, 'ROI3:')
     roi4 = Cpt(ROIPlugin, 'ROI4:')
-    # TODO: Test + enable these plugins
-    #proc1 = Cpt(ProcessPlugin, 'Proc1:')
-    #trans1 = Cpt(TransformPlugin, 'Trans1:')
-    #over1 = Cpt(OverlayPlugin, 'Over1:') ##for crosshairs in tiff
+    proc1 = Cpt(ProcessPlugin, 'Proc1:')
+    trans1 = Cpt(TransformPlugin, 'Trans1:')
+    over1 = Cpt(OverlayPlugin, 'Over1:')
 
 
 class NoStatsCam(SingleTrigger, AreaDetector):
@@ -165,11 +170,11 @@ class MonitorStatsCam(SingleTrigger, AreaDetector): #TODO does this subscribe/un
     def subscribe(self, *args, **kwargs):
         #TODO centroid.x was orignally cenx, neither work in substribing. - figure out later.
         return self.stats1.centroid.x.subscribe(*args, **kwargs) #TODO if this works, then add stats1.ceny too.
-        return self.stast1.centroid.y.subscribe(*args, **kwargs) #TODO if this works, then add stats1.ceny too.
+        # return self.stast1.centroid.y.subscribe(*args, **kwargs) #TODO if this works, then add stats1.ceny too.
 
     def unsubuscribe(self, *args, **kwargs):
         return self.stats1.centroid.x.unsubscribe(*args, **kwargs)
-        return self.stats1.centroid.y.unsubscribe(*args, **kwargs)
+        # return self.stats1.centroid.y.unsubscribe(*args, **kwargs)
 
 
 def update_describe_typing(dic, obj):
@@ -308,6 +313,23 @@ class AxisCam(StandardAxisCam):
         super().__init__(*args, **kwargs)
         self.hdf5.kind = "normal"
         self.hdf5.file_path.path_semantics = "nt" # windows path semantics
+        self.ensure_acquiring = False
+        # Camera is currently UInt16, the default is wrong at Int8
+        self.cam.data_type.set("UInt16")
+        ttime.sleep(1)
+
+    def stage(self):
+        # Ensure we continue acquiring in case of failure
+        self.ensure_acquiring = self.cam.image_mode.get() == "Continuous" and self.cam.acquire.get() == 1
+        super().stage()
+
+    def unstage(self):
+        super().unstage()
+        # If the image mode was continuous, start acquiring again
+        if self.ensure_acquiring:
+            self.cam.image_mode.put("Continuous")
+            ttime.sleep(1)
+            self.cam.acquire.put(1)
 
 
 class FCCDCam(AreaDetectorCam):
