@@ -1,4 +1,4 @@
-from ophyd import (EpicsScaler, EpicsSignal, EpicsSignalRO, Device,
+from ophyd import (EpicsScaler, EpicsSignal, EpicsSignalRO, Device, BlueskyInterface,
                    SingleTrigger, HDF5Plugin, ImagePlugin, StatsPlugin,
                    ROIPlugin, TransformPlugin, OverlayPlugin, ProsilicaDetector, TIFFPlugin)
 
@@ -7,7 +7,7 @@ from ophyd.areadetector.detectors import DetectorBase
 from ophyd.areadetector.filestore_mixins import FileStoreHDF5IterativeWrite, FileStoreTIFFIterativeWrite
 from ophyd.areadetector import ADComponent, EpicsSignalWithRBV
 from ophyd.areadetector.plugins import PluginBase, ProcessPlugin, HDF5Plugin_V22, TIFFPlugin_V22
-from ophyd import Component as Cpt
+from ophyd import Component as Cpt, DeviceStatus
 from ophyd.device import FormattedComponent as FCpt
 from ophyd import AreaDetector
 import time as ttime
@@ -25,6 +25,79 @@ from .stats_plugin import StatsPluginCSX
 
 DEFAULT_TIMEOUT = 10  # Seconds
 
+class ContinuousAcquisitionTrigger(BlueskyInterface):
+    """
+    TODO: Not currently operational. It saves `cam.num_images` images in a single file.
+          The intended behavior is to save one file across all images in a BlueskyRun.
+
+    This trigger mixin class records images when it is triggered.
+
+    It expects the detector to *already* be acquiring, continously.
+    """
+    def __init__(self, *args, plugin_name=None, image_name=None, **kwargs):
+        if plugin_name is None:
+            raise ValueError("plugin name is a required keyword argument")
+        super().__init__(*args, **kwargs)
+        self._plugin = getattr(self, plugin_name)
+        if image_name is None:
+            image_name = '_'.join([self.name, 'image'])
+        self._plugin.stage_sigs[self._plugin.auto_save] = 'No'
+        self.cam.stage_sigs[self.cam.image_mode] = 'Continuous'
+        self._plugin.stage_sigs[self._plugin.file_write_mode] = 'Capture'
+        self._image_name = image_name
+        self._status = None
+        self._num_captured_signal = self._plugin.num_captured
+        self._num_captured_signal.subscribe(self._num_captured_changed)
+        self._save_started = False
+
+    def stage(self):
+        if self.cam.acquire.get() != 1:
+             try:
+                self.cam.acquire.put(1)
+                print("Not currently acquiring...starting continuous acquisition.")
+                ttime.sleep(1)
+             except:
+                 raise RuntimeError("The ContinuousAcuqisitionTrigger expects "
+                                    "the detector to already be acquiring."
+                                    "I was unable to fix it, please restart the ui.") #new line, DO
+             
+        # Stage the detector
+        super().stage()
+
+    def trigger(self):
+        "Trigger one acquisition."
+        if not self._staged:
+            raise RuntimeError("This detector is not ready to trigger."
+                               "Call the stage() method before triggering.")
+        self._save_started = False
+        self._status = DeviceStatus(self)
+        self._desired_number_of_images = self.cam.num_images.get()
+        self._plugin.num_capture.put(self._desired_number_of_images)
+        self.generate_datum(self._image_name, ttime.time())
+        # self.proc.reset_filter.put(1) TODO: Not sure if this is needed
+        self._plugin.capture.put(1)
+        return self._status
+
+    def _num_captured_changed(self, value=None, old_value=None, **kwargs):
+        "This is called when the `num_captured` signal changes."
+        if self._status is None:
+            # This means that we captured data before or in between triggers.
+            # This leads to dropped frames so we don't want this to occur.
+            raise RuntimeError("Dropped frames detected. There is a race condition between the HDF plugin and the trigger method.")
+        # If we have captured the desired number of images, write the file.
+        # TODO: we don't want to write the file here, we want to write the file in `unstage()`
+        if value == self._desired_number_of_images:
+            try:
+                self._plugin.write_file.put(1)
+            except Exception as e:
+                print(e)
+                raise
+            self._save_started = True
+        if value == 0 and self._save_started:
+            self._status._finished()
+            self._status = None
+            self._save_started = False
+
 
 ##TODO why AreaDetector and not ProsilicaDetector for StandardCam Class below
 class StandardCam(SingleTrigger, AreaDetector):#TODO is there something more standard for prosilica? seems only used on prosilica. this does stats, but no image saving (unsure if easy to configure or not and enable/disable)
@@ -41,6 +114,50 @@ class StandardCam(SingleTrigger, AreaDetector):#TODO is there something more sta
     trans1 = Cpt(TransformPlugin, 'Trans1:')
     over1 = Cpt(OverlayPlugin, 'Over1:') ##for crosshairs in tiff
 
+
+class AxisDetectorCam(AreaDetectorCam):
+    """
+    Custom AxisDetectorCam class to include a `wait_for_plugins` signal.
+    """
+    _default_configuration_attrs = AreaDetectorCam._default_configuration_attrs + (
+        "gain",
+        "tec"
+    )
+    wait_for_plugins = Cpt(EpicsSignal, "WaitForPlugins", string=True, kind="hinted")
+    gain = Cpt(EpicsSignal, "GainMode", string=True, kind="config")
+    tec = Cpt(EpicsSignal, "TEC", string=True, kind="config")
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.stage_sigs["wait_for_plugins"] = "Yes"
+
+    def ensure_nonblocking(self):
+        self.stage_sigs["wait_for_plugins"] = "Yes"
+        for c in self.parent.component_names:
+            cpt = getattr(self.parent, c)
+            if cpt is self:
+                continue
+            if hasattr(cpt, "ensure_nonblocking"):
+                cpt.ensure_nonblocking()
+
+
+# TODO: Change from `SingleTrigger` to `ContinuousAcquisitionTrigger`
+class StandardAxisCam(SingleTrigger, AreaDetector):
+    cam = Cpt(AxisDetectorCam, "cam1:")
+    stats1 = Cpt(StatsPlugin, 'Stats1:')
+    stats2 = Cpt(StatsPlugin, 'Stats2:')
+    stats3 = Cpt(StatsPlugin, 'Stats3:')
+    stats4 = Cpt(StatsPlugin, 'Stats4:')
+    stats5 = Cpt(StatsPlugin, 'Stats5:')
+    roi1 = Cpt(ROIPlugin, 'ROI1:')
+    roi2 = Cpt(ROIPlugin, 'ROI2:')
+    roi3 = Cpt(ROIPlugin, 'ROI3:')
+    roi4 = Cpt(ROIPlugin, 'ROI4:')
+    proc1 = Cpt(ProcessPlugin, 'Proc1:')
+    trans1 = Cpt(TransformPlugin, 'Trans1:')
+    over1 = Cpt(OverlayPlugin, 'Over1:')
+
+
 class NoStatsCam(SingleTrigger, AreaDetector):
     pass
 
@@ -53,11 +170,11 @@ class MonitorStatsCam(SingleTrigger, AreaDetector): #TODO does this subscribe/un
     def subscribe(self, *args, **kwargs):
         #TODO centroid.x was orignally cenx, neither work in substribing. - figure out later.
         return self.stats1.centroid.x.subscribe(*args, **kwargs) #TODO if this works, then add stats1.ceny too.
-        return self.stast1.centroid.y.subscribe(*args, **kwargs) #TODO if this works, then add stats1.ceny too.
+        # return self.stast1.centroid.y.subscribe(*args, **kwargs) #TODO if this works, then add stats1.ceny too.
 
     def unsubuscribe(self, *args, **kwargs):
         return self.stats1.centroid.x.unsubscribe(*args, **kwargs)
-        return self.stats1.centroid.y.unsubscribe(*args, **kwargs)
+        # return self.stats1.centroid.y.unsubscribe(*args, **kwargs)
 
 
 def update_describe_typing(dic, obj):
@@ -110,7 +227,6 @@ class StandardProsilicaWithHDF5(StandardCam):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.hdf5.kind = "normal"
-
 
 
 class TIFFPluginWithFileStore(TIFFPlugin_V22, FileStoreTIFFIterativeWrite): #RIPPED OFF FROM CHX because mutating H5 has wrong shape for color img
@@ -180,6 +296,42 @@ class HDF5PluginWithFileStore(HDF5PluginSWMR, FileStoreHDF5IterativeWrite):
         return self._ret
 
 
+class AxisCam(StandardAxisCam):
+    """
+    Class for Axis detector with HDF5 file saving.
+
+    The IOC is currently hosted on a Windows machine so the
+    `write_path_template` must be specified as a Windows path.
+    """
+    hdf5 = Cpt(HDF5PluginWithFileStorePlain,
+              suffix='HDF1:',
+              read_path_template='/nsls2/data/csx/legacy/axis_data/hdf5/%Y/%m/%d',
+              root='/nsls2/data/csx/legacy/axis_data/hdf5',
+              write_path_template='Z:/hdf5/%Y/%m/%d', # From the IOC which is Windows
+              path_semantics='windows')
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.hdf5.kind = "normal"
+        self.hdf5.file_path.path_semantics = "nt" # windows path semantics
+        self.ensure_acquiring = False
+        # Camera is currently UInt16, the default is wrong at Int8
+        self.cam.data_type.set("UInt16")
+        ttime.sleep(1)
+
+    def stage(self):
+        # Ensure we continue acquiring in case of failure
+        self.ensure_acquiring = self.cam.image_mode.get() == "Continuous" and self.cam.acquire.get() == 1
+        super().stage()
+
+    def unstage(self):
+        super().unstage()
+        # If the image mode was continuous, start acquiring again
+        if self.ensure_acquiring:
+            self.cam.image_mode.put("Continuous")
+            ttime.sleep(1)
+            self.cam.acquire.put(1)
+
+
 class FCCDCam(AreaDetectorCam):
     sdk_version = Cpt(EpicsSignalRO, 'SDKVersion_RBV')
     firmware_version = Cpt(EpicsSignalRO, 'FirmwareVersion_RBV')
@@ -203,7 +355,6 @@ class FastCCDPlugin(PluginBase):
     rows = Cpt(EpicsSignalWithRBV, 'Rows')#
     row_offset = Cpt(EpicsSignalWithRBV, 'RowOffset')
     overscan_cols = Cpt(EpicsSignalWithRBV, 'OverscanCols')
-
 
 
 class ProductionCamBase(DetectorBase):
