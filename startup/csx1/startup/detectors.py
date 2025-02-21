@@ -81,7 +81,7 @@ _setup_stats(cam_slt3)
 #_setup_stats_cen(cam_slt3_hdf5)
 
 # TODO: Add this parameter when switch from `SingleTrigger` to `ContinuousAcquisitionTrigger``: plugin_name='hdf5'
-axis1 = AxisCam("XF:23ID1-ES{Det-Axis:1}", name='axis1')
+axis1 = AxisCam("XF:23ID1-ES{AXIS}", name='axis1')
 _setup_stats(axis1)
 
 # Setup on 2018/03/16 for correlating fCCD and sample position - worked 
