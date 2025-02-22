@@ -26,6 +26,9 @@ sd.baseline = [theta, delta, gamma, muR,
 
 #bec.disable_baseline() #no print to CLI, just save to datastore
 
+#axis1.cam.temperature_actual.kind = 'hinted'
+#sd.baseline.extend([axis1.cam.temperature_actual]) ## TODO we need soemthing differnt
+
 sclr.names.read_attrs=['name1','name2','name3','name4','name5','name6']  # TODO  WHAT IS THIS??? - Dan Allan
 sclr.channels.read_attrs=['chan1','chan2','chan3','chan4','chan5','chan6']
 # Old-style hints config is replaced by the new 'kind' feature
