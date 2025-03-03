@@ -126,6 +126,7 @@ class AxisDetectorCam(AreaDetectorCam):
     wait_for_plugins = Cpt(EpicsSignal, "WaitForPlugins", string=True, kind="hinted")
     gain = Cpt(EpicsSignal, "GainMode", string=True, kind="config")
     tec = Cpt(EpicsSignal, "TEC", string=True, kind="config")
+    acquire_period = ADComponent(EpicsSignalWithRBV, "AcquirePeriod", tolerance=0.01, timeout=5, kind="config")
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
