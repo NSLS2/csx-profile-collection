@@ -1,15 +1,16 @@
 from ophyd import (EpicsScaler, EpicsSignal, EpicsSignalRO, Device, BlueskyInterface,
                    SingleTrigger, HDF5Plugin, ImagePlugin, StatsPlugin,
-                   ROIPlugin, TransformPlugin, OverlayPlugin, ProsilicaDetector, TIFFPlugin)
+                   ROIPlugin, TransformPlugin, OverlayPlugin, ProsilicaDetector, TIFFPlugin, Signal)
 
 from ophyd.areadetector.cam import AreaDetectorCam
 from ophyd.areadetector.detectors import DetectorBase
-from ophyd.areadetector.filestore_mixins import FileStoreHDF5IterativeWrite, FileStoreTIFFIterativeWrite
+from ophyd.areadetector.filestore_mixins import FileStoreHDF5IterativeWrite, FileStoreTIFFIterativeWrite, resource_factory
 from ophyd.areadetector import ADComponent, EpicsSignalWithRBV
 from ophyd.areadetector.plugins import PluginBase, ProcessPlugin, HDF5Plugin_V22, TIFFPlugin_V22
 from ophyd import Component as Cpt, DeviceStatus
 from ophyd.device import FormattedComponent as FCpt
 from ophyd import AreaDetector
+from pathlib import PurePath
 import time as ttime
 import itertools
 
@@ -24,6 +25,27 @@ from .stats_plugin import StatsPluginCSX
 
 
 DEFAULT_TIMEOUT = 10  # Seconds
+
+
+class ExternalFileReference(Signal):
+    """
+    A pure software signal where a Device can stash a datum_id.
+
+    For example, it can store timestamps from HDF5 files. It needs
+    a `shape` because an HDF5 file can store multiple frames which
+    have multiple timestamps.
+    """
+    def __init__(self, *args, shape, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.shape = shape
+
+    def describe(self):
+        res = super().describe()
+        res[self.name].update(
+            dict(external="FILESTORE:", dtype="array", shape=self.shape)
+        )
+        return res
+
 
 class ContinuousAcquisitionTrigger(BlueskyInterface):
     """
@@ -198,6 +220,8 @@ def update_describe_typing(dic, obj):
 
 
 class HDF5PluginWithFileStorePlain(HDF5Plugin_V22, FileStoreHDF5IterativeWrite): ##SOURCED FROM BELOW FROM FCCD WITH SWMR removed
+    # Captures the datum id for the timestamp recorded in the HDF5 file
+    time_stamp = Cpt(ExternalFileReference, value="", kind="normal", shape=[])
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -205,6 +229,16 @@ class HDF5PluginWithFileStorePlain(HDF5Plugin_V22, FileStoreHDF5IterativeWrite):
         self.stage_sigs.update({"create_directory": -3})
         # last=False turns move_to_end into move_to_start. Yes, it's silly.
         self.stage_sigs.move_to_end("create_directory", last=False)
+
+        # Setup for timestamping using the detector
+        self._ts_datum_factory = None
+        self._ts_resource_uid = ""
+        self._ts_counter = None
+
+    def stage(self):
+        # Start the timestamp counter
+        self._ts_counter = itertools.count()
+        return super().stage()
 
     def get_frames_per_point(self):
         return self.parent.cam.num_images.get()
@@ -217,6 +251,41 @@ class HDF5PluginWithFileStorePlain(HDF5Plugin_V22, FileStoreHDF5IterativeWrite):
     def describe(self):
         ret = super().describe()
         update_describe_typing(ret, self)
+        return ret
+
+    def _generate_resource(self, resource_kwargs):
+        super()._generate_resource(resource_kwargs)
+        fn = PurePath(self._fn).relative_to(self.reg_root)
+
+        # Update the shape that describe() will report
+        # Multiple images will have multiple timestamps
+        self.time_stamp.shape = [self.get_frames_per_point()]
+
+        # Query for the AD_HDF5_TS timestamp
+        # See https://github.com/bluesky/area-detector-handlers/blob/master/area_detector_handlers/handlers.py#L230
+        resource, self._ts_datum_factory = resource_factory(
+            spec="AD_HDF5_TS",
+            root=str(self.reg_root),
+            resource_path=str(fn),
+            resource_kwargs=resource_kwargs,
+            path_semantics=self.path_semantics,
+        )
+
+        self._ts_resource_uid = resource["uid"]
+        self._asset_docs_cache.append(("resource", resource))
+
+    def generate_datum(self, key, timestamp, datum_kwargs):
+        ret = super().generate_datum(key, timestamp, datum_kwargs)
+        datum_kwargs = datum_kwargs or {}
+        datum_kwargs.update({"point_number": next(self._ts_counter)})
+        # make the timestamp datum, in this case we know they match
+        datum = self._ts_datum_factory(datum_kwargs)
+        datum_id = datum["datum_id"]
+
+        # stash so that we can collect later
+        self._asset_docs_cache.append(("datum", datum))
+        # put in the soft-signal so it gets auto-read later
+        self.time_stamp.put(datum_id)
         return ret
 
 
