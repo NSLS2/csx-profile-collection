@@ -83,6 +83,7 @@ _setup_stats(cam_slt3)
 # TODO: Add this parameter when switch from `SingleTrigger` to `ContinuousAcquisitionTrigger``: plugin_name='hdf5'
 axis1 = AxisCam("XF:23ID1-ES{AXIS}", name='axis1')
 _setup_stats(axis1)
+### more roi metadata at the end
 
 # Setup on 2018/03/16 for correlating fCCD and sample position - worked 
 # DON'T NEED STATS to take pictures of sample/optics
@@ -162,3 +163,7 @@ configuration_attrs_list.extend(['roi' + str(i) + string for i in range(1,5) for
 for attr in configuration_attrs_list:
     getattr(cam_dif_hdf5, attr).kind='config'
 cam_dif_hdf5.configuration_attrs.extend(['roi1', 'roi2', 'roi3','roi4'])
+
+for attr in configuration_attrs_list:
+    getattr(axis1, attr).kind='config'
+axis1.configuration_attrs.extend(['roi1', 'roi2', 'roi3','roi4'])

@@ -126,6 +126,7 @@ class AxisDetectorCam(AreaDetectorCam):
     wait_for_plugins = Cpt(EpicsSignal, "WaitForPlugins", string=True, kind="hinted")
     gain = Cpt(EpicsSignal, "GainMode", string=True, kind="config")
     tec = Cpt(EpicsSignal, "TEC", string=True, kind="config")
+    acquire_period = ADComponent(EpicsSignalWithRBV, "AcquirePeriod", tolerance=0.01, timeout=5, kind="config")
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -316,11 +317,19 @@ class AxisCam(StandardAxisCam):
         self.ensure_acquiring = False
         # Camera is currently UInt16, the default is wrong at Int8
         self.cam.data_type.set("UInt16")
+        self.additional_timeout = 0.0
         ttime.sleep(1)
 
     def stage(self):
         # Ensure we continue acquiring in case of failure
         self.ensure_acquiring = self.cam.image_mode.get() == "Continuous" and self.cam.acquire.get() == 1
+
+        # Adjust timeout relative to acquire_time and acquire_period
+        exposure_time = self.cam.acquire_time.get()
+        acquire_period = self.cam.acquire_period.get()
+        self.additional_timeout = exposure_time + acquire_period
+        self.cam.acquire._timeout += self.additional_timeout
+
         super().stage()
 
     def unstage(self):
@@ -330,6 +339,9 @@ class AxisCam(StandardAxisCam):
             self.cam.image_mode.put("Continuous")
             ttime.sleep(1)
             self.cam.acquire.put(1)
+
+        # Adjust timeout back to original value
+        self.cam.acquire._timeout -= self.additional_timeout
 
 
 class FCCDCam(AreaDetectorCam):

@@ -66,6 +66,8 @@ tardis.theta.user_offset.kind = 'config' #hot fix https://github.com/bluesky/blu
 tardis.delta.user_offset.kind = 'config'
 tardis.gamma.user_offset.kind = 'config'
 
+tardis.reflections.kind = "omitted"
+
 # re-map Tardis' axis names onto what an E6C expects
 name_map = {'mu': 'theta', 'omega': 'mu', 'chi': 'chi', 'phi': 'phi', 'gamma': 'delta', 'delta': 'gamma'}
 
