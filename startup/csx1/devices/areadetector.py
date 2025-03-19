@@ -220,6 +220,7 @@ def update_describe_typing(dic, obj):
 
 
 class HDF5PluginWithFileStorePlain(HDF5Plugin_V22, FileStoreHDF5IterativeWrite): ##SOURCED FROM BELOW FROM FCCD WITH SWMR removed
+    _default_read_attrs = ("time_stamp",)
     # Captures the datum id for the timestamp recorded in the HDF5 file
     time_stamp = Cpt(ExternalFileReference, value="", kind="normal", shape=[])
 
@@ -259,12 +260,13 @@ class HDF5PluginWithFileStorePlain(HDF5Plugin_V22, FileStoreHDF5IterativeWrite):
 
         # Update the shape that describe() will report
         # Multiple images will have multiple timestamps
-        self.time_stamp.shape = [self.get_frames_per_point()]
+        fpp = self.get_frames_per_point()
+        self.time_stamp.shape = [fpp] if fpp > 1 else []
 
         # Query for the AD_HDF5_TS timestamp
         # See https://github.com/bluesky/area-detector-handlers/blob/master/area_detector_handlers/handlers.py#L230
         resource, self._ts_datum_factory = resource_factory(
-            spec="AD_HDF5_TS",
+            spec="AD_HDF5_DET_TS",
             root=str(self.reg_root),
             resource_path=str(fn),
             resource_kwargs=resource_kwargs,
