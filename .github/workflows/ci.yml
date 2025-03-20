@@ -12,7 +12,7 @@ on:
 
 jobs:
   testing_beamline_profiles:
-    name: ${{ matrix.repos.beamline-acronym }}-${{ matrix.repos.repo }}-${{ matrix.repos.branch }}-py311
+    name: ${{ matrix.repos.beamline-acronym }}-${{ matrix.repos.repo }}-${{ matrix.repos.branch }}-${{ matrix.zenodo.python }}
     strategy:
       fail-fast: false
       matrix:
@@ -24,10 +24,13 @@ jobs:
         zenodo:
           - url: "https://zenodo.org/records/14862443/files/2025-1.0-py310-tiled.tar.gz"
             md5: "d031ed24ad7beebb836f93712d8def2e"
+            python: "3.10"
           - url: "https://zenodo.org/records/14862443/files/2025-1.0-py311-tiled.tar.gz"
             md5: "3b1074c0827ee3baf0cdcd64917b9afa"
+            python: "3.11"
           - url: "https://zenodo.org/records/14862443/files/2025-1.0-py312-tiled.tar.gz"
             md5: "624239ed0846ef95d8334ea100581b83"
+            python: "3.12"
 
     runs-on: ubuntu-latest
     steps:
