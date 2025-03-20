@@ -1,0 +1,42 @@
+name: Test IPython beamline profiles
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+  workflow_call:
+    inputs:
+      version: # the variable you can use in place of a matrix
+        required: true
+        type: string
+
+jobs:
+  testing_beamline_profiles:
+    name: ${{ matrix.repos.beamline-acronym }}-${{ matrix.repos.repo }}-${{ matrix.repos.branch }}-py311
+    strategy:
+      fail-fast: false
+      matrix:
+        repos:
+          - org: "NSLS-II-CSX"
+            repo: "profile_collection"
+            branch: "HEAD"
+            beamline-acronym: "csx"
+        zenodo:
+          - url: "https://zenodo.org/records/14862443/files/2025-1.0-py310-tiled.tar.gz"
+            md5: "d031ed24ad7beebb836f93712d8def2e"
+          - url: "https://zenodo.org/records/14862443/files/2025-1.0-py311-tiled.tar.gz"
+            md5: "3b1074c0827ee3baf0cdcd64917b9afa"
+          - url: "https://zenodo.org/records/14862443/files/2025-1.0-py312-tiled.tar.gz"
+            md5: "624239ed0846ef95d8334ea100581b83"
+
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run Integration Tests Against Beamline Profiles
+        uses: NSLS2/gha-beamline-integration-test@support-local-conda-env
+        with:
+          conda_env_url: "${{ matrix.zenodo.url }}"
+          conda_env_md5: "${{ matrix.zenodo.md5 }}"
+          org: "${{ matrix.repos.org }}"
+          repo: "${{ matrix.repos.repo }}"
+          branch: "${{ matrix.repos.branch }}"
+          beamline-acronym: "${{ matrix.repos.beamline-acronym }}"
