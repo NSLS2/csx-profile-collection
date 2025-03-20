@@ -12,7 +12,7 @@ on:
 
 jobs:
   testing_beamline_profiles:
-    name: ${{ matrix.repos.beamline-acronym }}-${{ matrix.repos.repo }}-${{ matrix.repos.branch }}-${{ matrix.zenodo.python }}
+    name: ${{ matrix.repos.beamline-acronym }}-py${{ matrix.zenodo.python }}
     strategy:
       fail-fast: false
       matrix:
