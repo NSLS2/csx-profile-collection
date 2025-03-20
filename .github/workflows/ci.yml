@@ -33,8 +33,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          path: ${{ matrix.repos.repo }}
 
       - name: Run Integration Tests Against Beamline Profiles
         uses: NSLS2/gha-beamline-integration-test@support-local-conda-env
