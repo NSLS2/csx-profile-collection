@@ -19,7 +19,7 @@ jobs:
         repos:
           - org: "NSLS-II-CSX"
             repo: "profile_collection"
-            branch: "HEAD"
+            branch: ""
             beamline-acronym: "csx"
         zenodo:
           - url: "https://zenodo.org/records/14862443/files/2025-1.0-py310-tiled.tar.gz"
@@ -31,6 +31,9 @@ jobs:
 
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Run Integration Tests Against Beamline Profiles
         uses: NSLS2/gha-beamline-integration-test@support-local-conda-env
         with:
