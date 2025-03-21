@@ -38,7 +38,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Run Integration Tests Against Beamline Profiles
-        uses: NSLS2/gha-beamline-integration-test@support-local-conda-env
+        uses: NSLS2/gha-beamline-integration-test@2025-1.0-test
         with:
           conda_env_url: "${{ matrix.zenodo.url }}"
           conda_env_md5: "${{ matrix.zenodo.md5 }}"
