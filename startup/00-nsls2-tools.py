@@ -12,15 +12,13 @@ from pathlib import Path
 from csx1.analysis.callbacks import BECwithTicks
 
 ip = get_ipython()
-nslsii.configure_base(ip.user_ns, 'csx', publish_documents_with_kafka=True, bec=False)
+# Metadata stored in RedisJSONDict at url provided here
+nslsii.configure_base(ip.user_ns,
+                      'csx',
+                      publish_documents_with_kafka=True,
+                      bec=False,
+                      redis_url="info.csx.nsls2.bnl.gov")
 nslsii.configure_olog(ip.user_ns)
-
-# Commenting out the DAMA-suggested location
-# (~/.local/share/bluesky/runengine-metadata), as the BL staff prefers a
-# separate location.
-# runengine_metadata_dir = appdirs.user_data_dir(appname="bluesky") / Path("runengine-metadata")
-runengine_metadata_dir = os.path.expanduser("/nsls2/data/csx/shared/config/RE-metadata")
-RE.md = PersistentDict(runengine_metadata_dir)
 
 bec = BECwithTicks()
 peaks = bec.peaks  # just as alias for less typing
