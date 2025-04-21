@@ -53,7 +53,7 @@ class TriggerStatus(DeviceStatus):
     """
 
     def __init__(
-        self, tracking_signal: Signal, target_signal: Signal, device, *args, **kwargs
+        self, tracking_signal: Signal, target: Signal | int, device, *args, **kwargs
     ):
         super().__init__(device, *args, **kwargs)
         self.start_ts = ttime.time()
@@ -66,7 +66,7 @@ class TriggerStatus(DeviceStatus):
             # some state needed only by self._notify_watchers
             self._name = self.device.name
             self._initial_count = self.tracking_signal.get()
-            self._target_count = target_signal.get()
+            self._target_count = target.get() if isinstance(target, Signal) else target
 
     def watch(self, func):
         self._watchers.append(func)
@@ -119,6 +119,19 @@ class NDCircularBuffTriggerStatus(TriggerStatus):
             device.cb.post_trigger_qty, device.cb.post_count, device, *args, **kwargs
         )
 
+class NDHDF5WriteStatus(TriggerStatus):
+    """
+    TODO: REMOVE WHEN THIS PR IS RELEASED IN A NEW CONDA ENV: https://github.com/bluesky/ophyd/pull/1240 
+    """
+
+    def __init__(self, device, target_count, *args, **kwargs):
+        if not hasattr(device, "hdf5"):
+            raise RuntimeError(
+                "NDHDF5WriteStatus must be initialized with a device that has a HDF5Plugin"
+            )
+        super().__init__(
+            device.hdf5.num_captured, target=target_count, *args, **kwargs
+        )
 
 class ContinuousAcquisitionTrigger(BlueskyInterface):
     """
@@ -152,7 +165,6 @@ class ContinuousAcquisitionTrigger(BlueskyInterface):
             [
                 ("cam.acquire", 1),  # Start acquiring
                 ("cam.image_mode", self.cam.ImageMode.CONTINUOUS),  # 'Continuous' mode
-                ("cb.blocking_callbacks", "No"),
                 ("cb.flush_on_soft_trigger", 0),  # Flush the buffer on new image
                 ("cb.preset_trigger_count", 0),  # Keep the buffer capturing forever
                 # TODO: Figure out why this leaks an extra frame
@@ -475,7 +487,7 @@ class AxisCamBase(AreaDetector):
         self.cam.acquire._timeout -= self.additional_timeout
 
     def ensure_nonblocking(self):
-        self.stage_sigs["cam.wait_for_plugins"] = "Yes"
+        self.stage_sigs["cam.wait_for_plugins"] = "No"
         for c in self.component_names:
             cpt = getattr(self, c)
             if cpt is self:
@@ -496,7 +508,7 @@ class ContinuousAxisCam(ContinuousAcquisitionTrigger, AxisCamBase):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         print(self.stage_sigs)
-        self.cb.ensure_nonblocking()
+        self.ensure_nonblocking()
 
     def stage(self):
         print(self.stage_sigs)
@@ -513,6 +525,12 @@ class ContinuousAxisCam(ContinuousAcquisitionTrigger, AxisCamBase):
                 not isinstance(dev, CircularBuffPlugin)):
                 self.plugin_port_dict[dev] = dev.nd_array_port.get()
                 dev.nd_array_port.set(self.cb.port_name.get())
+
+    def trigger(self):
+        super().trigger()
+        hdf_status = TriggerStatus(self.hdf5.num_captured, self.cb.post_count, self)
+
+        return hdf_status
 
     def unstage(self):
         super().unstage()
