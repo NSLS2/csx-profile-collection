@@ -1,12 +1,12 @@
 from ophyd import (EpicsScaler, EpicsSignal, EpicsSignalRO, Device, BlueskyInterface,
                    SingleTrigger, HDF5Plugin, ImagePlugin, StatsPlugin,
-                   ROIPlugin, TransformPlugin, OverlayPlugin, ProsilicaDetector, TIFFPlugin, Signal)
+                   ROIPlugin, TransformPlugin, OverlayPlugin, ProsilicaDetector, TIFFPlugin, Signal, Staged)
 
 from ophyd.areadetector.cam import AreaDetectorCam
 from ophyd.areadetector.detectors import DetectorBase
 from ophyd.areadetector.filestore_mixins import FileStoreHDF5IterativeWrite, FileStoreTIFFIterativeWrite, resource_factory
 from ophyd.areadetector import ADComponent, EpicsSignalWithRBV
-from ophyd.areadetector.plugins import PluginBase, ProcessPlugin, HDF5Plugin_V22, TIFFPlugin_V22
+from ophyd.areadetector.plugins import PluginBase, ProcessPlugin, HDF5Plugin_V22, TIFFPlugin_V22, CircularBuffPlugin_V34, CircularBuffPlugin
 from ophyd import Component as Cpt, DeviceStatus
 from ophyd.device import FormattedComponent as FCpt
 from ophyd import AreaDetector
@@ -47,78 +47,150 @@ class ExternalFileReference(Signal):
         return res
 
 
+class TriggerStatus(DeviceStatus):
+    """
+    TODO: REMOVE WHEN THIS PR IS RELEASED IN A NEW CONDA ENV: https://github.com/bluesky/ophyd/pull/1240 
+    """
+
+    def __init__(
+        self, tracking_signal: Signal, target_signal: Signal, device, *args, **kwargs
+    ):
+        super().__init__(device, *args, **kwargs)
+        self.start_ts = ttime.time()
+        self.tracking_signal = tracking_signal
+
+        # Notify watchers (things like progress bars) of new values
+        # at the device's natural update rate.
+        if not self.done:
+            self.tracking_signal.subscribe(self._notify_watchers)
+            # some state needed only by self._notify_watchers
+            self._name = self.device.name
+            self._initial_count = self.tracking_signal.get()
+            self._target_count = target_signal.get()
+
+    def watch(self, func):
+        self._watchers.append(func)
+
+    def _notify_watchers(self, value, *args, **kwargs):
+        # *args and **kwargs catch extra inputs from pyepics, not needed here
+        if self.done:
+            self.tracking_signal.clear_sub(self._notify_watchers)
+        if not self._watchers:
+            return
+        # Always start progress bar at 0 regardless of starting value of
+        # array_counter.
+        current = value - self._initial_count
+        target = self._target_count
+        time_elapsed = ttime.time() - self.start_ts
+        try:
+            fraction = 1 - (current / target)
+        except ZeroDivisionError:
+            fraction = 0
+        except Exception:
+            fraction = None
+            time_remaining = None
+        else:
+            time_remaining = time_elapsed / fraction if fraction != 0 else 0
+        for watcher in self._watchers:
+            watcher(
+                name=self._name,
+                current=current,
+                initial=0,
+                target=target,
+                unit="images",
+                precision=0,
+                fraction=fraction,
+                time_elapsed=time_elapsed,
+                time_remaining=time_remaining,
+            )
+
+
+class NDCircularBuffTriggerStatus(TriggerStatus):
+    """
+    TODO: REMOVE WHEN THIS PR IS RELEASED IN A NEW CONDA ENV: https://github.com/bluesky/ophyd/pull/1240 
+    """
+
+    def __init__(self, device, *args, **kwargs):
+        if not hasattr(device, "cb"):
+            raise RuntimeError(
+                "NDCircularBuffTriggerStatus must be initialized with a device that has a CircularBuffPlugin"
+            )
+        super().__init__(
+            device.cb.post_trigger_qty, device.cb.post_count, device, *args, **kwargs
+        )
+
+
 class ContinuousAcquisitionTrigger(BlueskyInterface):
     """
-    TODO: Not currently operational. It saves `cam.num_images` images in a single file.
-          The intended behavior is to save one file across all images in a BlueskyRun.
+    TODO: REMOVE WHEN THIS PR IS RELEASED IN A NEW CONDA ENV: https://github.com/bluesky/ophyd/pull/1240 
+    This trigger mixin class takes frames from a circular buffer filled
+    by continuous acquisitions from the detector.
 
-    This trigger mixin class records images when it is triggered.
+    We assume that the circular buffer is pre-configured and this is what
+    will be "triggered" instead of the detector.
 
-    It expects the detector to *already* be acquiring, continously.
+    In practice, this means that all other plugins should be configured to be
+    downstream of the circular buffer, rathern than the detector driver.
     """
-    def __init__(self, *args, plugin_name=None, image_name=None, **kwargs):
-        if plugin_name is None:
-            raise ValueError("plugin name is a required keyword argument")
+
+    _status_type = NDCircularBuffTriggerStatus
+
+    def __init__(self, *args, image_name=None, **kwargs):
         super().__init__(*args, **kwargs)
-        self._plugin = getattr(self, plugin_name)
         if image_name is None:
-            image_name = '_'.join([self.name, 'image'])
-        self._plugin.stage_sigs[self._plugin.auto_save] = 'No'
-        self.cam.stage_sigs[self.cam.image_mode] = 'Continuous'
-        self._plugin.stage_sigs[self._plugin.file_write_mode] = 'Capture'
+            image_name = "_".join([self.name, "image"])
         self._image_name = image_name
+
+        if not hasattr(self, "cam"):
+            raise RuntimeError("Detector must have a camera configured.")
+
+        if not hasattr(self, "cb"):
+            raise RuntimeError("Detector must have a CircularBuffPlugin configured.")
+
+        # Order of operations is important here.
+        self.stage_sigs.update(
+            [
+                ("cam.acquire", 1),  # Start acquiring
+                ("cam.image_mode", self.cam.ImageMode.CONTINUOUS),  # 'Continuous' mode
+                ("cb.blocking_callbacks", "No"),
+                ("cb.flush_on_soft_trigger", 0),  # Flush the buffer on new image
+                ("cb.preset_trigger_count", 0),  # Keep the buffer capturing forever
+                # TODO: Figure out why this leaks an extra frame
+                # Tested this with the HDF5 plugin and it writes an extra frame to
+                # the file when `pre_count` is non-zero.
+                # Possibly a bug in the NDCircularBuff plugin?
+                ("cb.pre_count", 0),  # The number of frames to take before the trigger
+                ("cb.capture", 1),  # Start filling the buffer
+            ]
+        )
+        self._trigger_signal = self.cb.trigger_
         self._status = None
-        self._num_captured_signal = self._plugin.num_captured
-        self._num_captured_signal.subscribe(self._num_captured_changed)
-        self._save_started = False
 
     def stage(self):
-        if self.cam.acquire.get() != 1:
-             try:
-                self.cam.acquire.put(1)
-                print("Not currently acquiring...starting continuous acquisition.")
-                ttime.sleep(1)
-             except:
-                 raise RuntimeError("The ContinuousAcuqisitionTrigger expects "
-                                    "the detector to already be acquiring."
-                                    "I was unable to fix it, please restart the ui.") #new line, DO
-             
-        # Stage the detector
+        self._trigger_signal.subscribe(self._trigger_changed)
         super().stage()
 
+    def unstage(self):
+        super().unstage()
+        self._trigger_signal.clear_sub(self._trigger_changed)
+
     def trigger(self):
-        "Trigger one acquisition."
-        if not self._staged:
-            raise RuntimeError("This detector is not ready to trigger."
-                               "Call the stage() method before triggering.")
-        self._save_started = False
-        self._status = DeviceStatus(self)
-        self._desired_number_of_images = self.cam.num_images.get()
-        self._plugin.num_capture.put(self._desired_number_of_images)
-        self.generate_datum(self._image_name, ttime.time())
-        # self.proc.reset_filter.put(1) TODO: Not sure if this is needed
-        self._plugin.capture.put(1)
+        if self._staged != Staged.yes:
+            raise RuntimeError(
+                "This detector is not ready to trigger."
+                "Call the stage() method before triggering."
+            )
+        self._status = self._status_type(self)
+        self._trigger_signal.put(1, wait=False)
+        self.generate_datum(self._image_name, ttime.time(), {})
         return self._status
 
-    def _num_captured_changed(self, value=None, old_value=None, **kwargs):
-        "This is called when the `num_captured` signal changes."
+    def _trigger_changed(self, value=None, old_value=None, **kwargs):
         if self._status is None:
-            # This means that we captured data before or in between triggers.
-            # This leads to dropped frames so we don't want this to occur.
-            raise RuntimeError("Dropped frames detected. There is a race condition between the HDF plugin and the trigger method.")
-        # If we have captured the desired number of images, write the file.
-        # TODO: we don't want to write the file here, we want to write the file in `unstage()`
-        if value == self._desired_number_of_images:
-            try:
-                self._plugin.write_file.put(1)
-            except Exception as e:
-                print(e)
-                raise
-            self._save_started = True
-        if value == 0 and self._save_started:
-            self._status._finished()
+            return
+        if (old_value == 1) and (value == 0):
+            self._status.set_finished()
             self._status = None
-            self._save_started = False
 
 
 ##TODO why AreaDetector and not ProsilicaDetector for StandardCam Class below
@@ -152,33 +224,7 @@ class AxisDetectorCam(AreaDetectorCam):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.stage_sigs["wait_for_plugins"] = "Yes"
 
-    def ensure_nonblocking(self):
-        self.stage_sigs["wait_for_plugins"] = "Yes"
-        for c in self.parent.component_names:
-            cpt = getattr(self.parent, c)
-            if cpt is self:
-                continue
-            if hasattr(cpt, "ensure_nonblocking"):
-                cpt.ensure_nonblocking()
-
-
-# TODO: Change from `SingleTrigger` to `ContinuousAcquisitionTrigger`
-class StandardAxisCam(SingleTrigger, AreaDetector):
-    cam = Cpt(AxisDetectorCam, "cam1:")
-    stats1 = Cpt(StatsPlugin, 'Stats1:')
-    stats2 = Cpt(StatsPlugin, 'Stats2:')
-    stats3 = Cpt(StatsPlugin, 'Stats3:')
-    stats4 = Cpt(StatsPlugin, 'Stats4:')
-    stats5 = Cpt(StatsPlugin, 'Stats5:')
-    roi1 = Cpt(ROIPlugin, 'ROI1:')
-    roi2 = Cpt(ROIPlugin, 'ROI2:')
-    roi3 = Cpt(ROIPlugin, 'ROI3:')
-    roi4 = Cpt(ROIPlugin, 'ROI4:')
-    proc1 = Cpt(ProcessPlugin, 'Proc1:')
-    trans1 = Cpt(TransformPlugin, 'Trans1:')
-    over1 = Cpt(OverlayPlugin, 'Over1:')
 
 
 class NoStatsCam(SingleTrigger, AreaDetector):
@@ -368,19 +414,33 @@ class HDF5PluginWithFileStore(HDF5PluginSWMR, FileStoreHDF5IterativeWrite):
         return self._ret
 
 
-class AxisCam(StandardAxisCam):
+class AxisCamBase(AreaDetector):
     """
     Class for Axis detector with HDF5 file saving.
 
     The IOC is currently hosted on a Windows machine so the
     `write_path_template` must be specified as a Windows path.
     """
+    cam = Cpt(AxisDetectorCam, "cam1:")
+    stats1 = Cpt(StatsPlugin, 'Stats1:')
+    stats2 = Cpt(StatsPlugin, 'Stats2:')
+    stats3 = Cpt(StatsPlugin, 'Stats3:')
+    stats4 = Cpt(StatsPlugin, 'Stats4:')
+    stats5 = Cpt(StatsPlugin, 'Stats5:')
+    roi1 = Cpt(ROIPlugin, 'ROI1:')
+    roi2 = Cpt(ROIPlugin, 'ROI2:')
+    roi3 = Cpt(ROIPlugin, 'ROI3:')
+    roi4 = Cpt(ROIPlugin, 'ROI4:')
+    proc1 = Cpt(ProcessPlugin, 'Proc1:')
+    trans1 = Cpt(TransformPlugin, 'Trans1:')
+    over1 = Cpt(OverlayPlugin, 'Over1:')
     hdf5 = Cpt(HDF5PluginWithFileStorePlain,
               suffix='HDF1:',
               read_path_template='/nsls2/data/csx/legacy/axis_data/hdf5/%Y/%m/%d',
               root='/nsls2/data/csx/legacy/axis_data/hdf5',
               write_path_template='Z:/hdf5/%Y/%m/%d', # From the IOC which is Windows
               path_semantics='windows')
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.hdf5.kind = "normal"
@@ -414,6 +474,53 @@ class AxisCam(StandardAxisCam):
         # Adjust timeout back to original value
         self.cam.acquire._timeout -= self.additional_timeout
 
+    def ensure_nonblocking(self):
+        self.stage_sigs["cam.wait_for_plugins"] = "Yes"
+        for c in self.component_names:
+            cpt = getattr(self, c)
+            if cpt is self:
+                continue
+            if hasattr(cpt, "ensure_nonblocking"):
+                cpt.ensure_nonblocking()
+
+
+class StandardAxisCam(SingleTrigger, AxisCamBase):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.stage_sigs["cam.wait_for_plugins"] = "Yes"
+
+
+class ContinuousAxisCam(ContinuousAcquisitionTrigger, AxisCamBase):
+    cb = Cpt(CircularBuffPlugin_V34, "CB1:")
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        print(self.stage_sigs)
+        self.cb.ensure_nonblocking()
+
+    def stage(self):
+        print(self.stage_sigs)
+        print(self.cb.stage_sigs)
+        super().stage()
+        # Set all of the other plugins to use the CB1 port
+        self.plugin_port_dict: dict[PluginBase, str] = {}
+        for name, dev in self.walk_subdevices(include_lazy=True):
+            # If the device is a plugin, ingests data from the cam port, and
+            # is not the CB plugin, then we need to update
+            # the ingest port to be from the CB plugin
+            if (isinstance(dev, PluginBase) and 
+                dev.nd_array_port.get() == self.cam.port_name.get() and
+                not isinstance(dev, CircularBuffPlugin)):
+                self.plugin_port_dict[dev] = dev.nd_array_port.get()
+                dev.nd_array_port.set(self.cb.port_name.get())
+
+    def unstage(self):
+        super().unstage()
+        # Reset all of the changed plugin ports to what they were before
+        for dev, old_port in self.plugin_port_dict.items():
+            dev.nd_array_port.set(old_port)
+        self.plugin_port_dict = {} 
+            
 
 class FCCDCam(AreaDetectorCam):
     sdk_version = Cpt(EpicsSignalRO, 'SDKVersion_RBV')

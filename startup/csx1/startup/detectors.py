@@ -19,7 +19,7 @@ from ..devices.areadetector import (StandardCam, NoStatsCam,
                                     StageOnFirstTrigger,
                                     MonitorStatsCam,
                                     StandardProsilicaWithHDF5, StandardProsilicaWithTIFF, #TODOpmab - added to try to save (inspired from SIX)
-                                    AxisCam) 
+                                    StandardAxisCam, ContinuousAxisCam) 
 
 from ..startup import db
 
@@ -80,9 +80,10 @@ cam_slt3 = StandardCam('XF:23ID1-ES{Dif-Cam:Beam}', name='cam_slt3')
 _setup_stats(cam_slt3)
 #_setup_stats_cen(cam_slt3_hdf5)
 
-# TODO: Add this parameter when switch from `SingleTrigger` to `ContinuousAcquisitionTrigger``: plugin_name='hdf5'
-axis1 = AxisCam("XF:23ID1-ES{AXIS}", name='axis1')
-_setup_stats(axis1)
+axis_standard = StandardAxisCam("XF:23ID1-ES{AXIS}", name='axis_standard')
+_setup_stats(axis_standard)
+axis_cont = ContinuousAxisCam("XF:23ID1-ES{AXIS}", name='axis_cont')
+_setup_stats(axis_cont)
 ### more roi metadata at the end
 
 # Setup on 2018/03/16 for correlating fCCD and sample position - worked 
@@ -165,5 +166,9 @@ for attr in configuration_attrs_list:
 cam_dif_hdf5.configuration_attrs.extend(['roi1', 'roi2', 'roi3','roi4'])
 
 for attr in configuration_attrs_list:
-    getattr(axis1, attr).kind='config'
-axis1.configuration_attrs.extend(['roi1', 'roi2', 'roi3','roi4'])
+    getattr(axis_standard, attr).kind='config'
+axis_standard.configuration_attrs.extend(['roi1', 'roi2', 'roi3','roi4'])
+
+for attr in configuration_attrs_list:
+    getattr(axis_cont, attr).kind='config'
+axis_cont.configuration_attrs.extend(['roi1', 'roi2', 'roi3','roi4'])
