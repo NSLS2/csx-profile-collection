@@ -134,3 +134,10 @@ target/
 .ipynb_checkpoints/
 
 .tags
+*.tiff
+*.h5
+*.hdf5
+*.hdf
+*.hdf5
+*.hdf5
+*.hdf5

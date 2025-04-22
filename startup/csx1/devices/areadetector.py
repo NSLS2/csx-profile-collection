@@ -1,3 +1,4 @@
+import logging
 from ophyd import (EpicsScaler, EpicsSignal, EpicsSignalRO, Device, BlueskyInterface,
                    SingleTrigger, HDF5Plugin, ImagePlugin, StatsPlugin,
                    ROIPlugin, TransformPlugin, OverlayPlugin, ProsilicaDetector, TIFFPlugin, Signal, Staged)
@@ -23,7 +24,7 @@ import numpy as np
 
 from .stats_plugin import StatsPluginCSX
 
-
+logger = logging.getLogger(__name__)
 DEFAULT_TIMEOUT = 10  # Seconds
 
 
@@ -68,8 +69,21 @@ class TriggerStatus(DeviceStatus):
             self._initial_count = self.tracking_signal.get()
             self._target_count = target.get() if isinstance(target, Signal) else target
 
+    @property
+    def target(self):
+        return self._target_count
+
     def watch(self, func):
         self._watchers.append(func)
+
+    def __and__(self, other):
+        return super().__and__(other)
+
+    def __or__(self, other):
+        return super().__or__(other)
+
+    def __xor__(self, other):
+        return super().__xor__(other)
 
     def _notify_watchers(self, value, *args, **kwargs):
         # *args and **kwargs catch extra inputs from pyepics, not needed here
@@ -80,17 +94,18 @@ class TriggerStatus(DeviceStatus):
         # Always start progress bar at 0 regardless of starting value of
         # array_counter.
         current = value - self._initial_count
-        target = self._target_count
+        target = self._target_count - self._initial_count
         time_elapsed = ttime.time() - self.start_ts
+        progress = (current / target)
         try:
-            fraction = 1 - (current / target)
+            proportion_remaining = 1 - progress
         except ZeroDivisionError:
-            fraction = 0
+            proportion_remaining = 0
         except Exception:
-            fraction = None
+            proportion_remaining = None
             time_remaining = None
         else:
-            time_remaining = time_elapsed / fraction if fraction != 0 else 0
+            time_remaining = time_elapsed / proportion_remaining if proportion_remaining != 0 else 0
         for watcher in self._watchers:
             watcher(
                 name=self._name,
@@ -99,7 +114,7 @@ class TriggerStatus(DeviceStatus):
                 target=target,
                 unit="images",
                 precision=0,
-                fraction=fraction,
+                fraction=proportion_remaining,
                 time_elapsed=time_elapsed,
                 time_remaining=time_remaining,
             )
@@ -434,6 +449,7 @@ class AxisCamBase(AreaDetector):
     `write_path_template` must be specified as a Windows path.
     """
     cam = Cpt(AxisDetectorCam, "cam1:")
+    image1 = Cpt(ImagePlugin, "Image1:")
     stats1 = Cpt(StatsPlugin, 'Stats1:')
     stats2 = Cpt(StatsPlugin, 'Stats2:')
     stats3 = Cpt(StatsPlugin, 'Stats3:')
@@ -509,36 +525,64 @@ class ContinuousAxisCam(ContinuousAcquisitionTrigger, AxisCamBase):
         super().__init__(*args, **kwargs)
         print(self.stage_sigs)
         self.ensure_nonblocking()
+        # Exclude specific plugins from being rerouted
+        self._excluded_plugin_names: set[str] = { }
+        self._plugin_port_dict: dict[PluginBase, str] = {} 
+
+        self._write_status: TriggerStatus | None = None
+        self._num_triggered = 0
 
     def stage(self):
-        print(self.stage_sigs)
-        print(self.cb.stage_sigs)
-        super().stage()
         # Set all of the other plugins to use the CB1 port
-        self.plugin_port_dict: dict[PluginBase, str] = {}
+        self._plugin_port_dict: dict[PluginBase, str] = {}
         for name, dev in self.walk_subdevices(include_lazy=True):
+            # Skip rerouting plugins that are excluded
+            if name in self._excluded_plugin_names:
+                continue
             # If the device is a plugin, ingests data from the cam port, and
             # is not the CB plugin, then we need to update
             # the ingest port to be from the CB plugin
             if (isinstance(dev, PluginBase) and 
                 dev.nd_array_port.get() == self.cam.port_name.get() and
                 not isinstance(dev, CircularBuffPlugin)):
-                self.plugin_port_dict[dev] = dev.nd_array_port.get()
+                self._plugin_port_dict[dev] = dev.nd_array_port.get()
                 dev.nd_array_port.set(self.cb.port_name.get())
 
-    def trigger(self):
-        super().trigger()
-        hdf_status = TriggerStatus(self.hdf5.num_captured, self.cb.post_count, self)
+        # MUST BE CALLED AFTER THE PLUGINS ARE SET UP
+        # Otherwise, the HDF plugin will start writing from AXIS1 port before
+        # the ports get switched
+        super().stage()
 
-        return hdf_status
+        self.hdf5.num_captured.subscribe(self._hdf5_num_captured_changed)
+        self._num_triggered = 0
+
+    def trigger(self):
+        """
+        Since we are non-blocking at the EPICS level, we want to wait for the HDF5
+        plugin to finish writing before we trigger the next acquisition.
+        """
+        self._num_triggered += 1
+        super().trigger()
+        self._write_status = TriggerStatus(self.hdf5.num_captured, self.cb.post_count.get() * self._num_triggered, self)
+        return self._write_status
+
+    def _hdf5_num_captured_changed(self, old_value, value, **kwargs):
+        if self._write_status is None:
+            return
+
+        if value == self._write_status.target:
+            self._write_status.set_finished()
+            self._write_status = None
 
     def unstage(self):
         super().unstage()
         # Reset all of the changed plugin ports to what they were before
-        for dev, old_port in self.plugin_port_dict.items():
+        for dev, old_port in self._plugin_port_dict.items():
             dev.nd_array_port.set(old_port)
-        self.plugin_port_dict = {} 
-            
+        self._plugin_port_dict = {} 
+
+        self.hdf5.num_captured.unsubscribe(self._hdf5_num_captured_changed)
+        self._num_triggered = 0
 
 class FCCDCam(AreaDetectorCam):
     sdk_version = Cpt(EpicsSignalRO, 'SDKVersion_RBV')
