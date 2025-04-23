@@ -449,7 +449,6 @@ class AxisCamBase(AreaDetector):
     `write_path_template` must be specified as a Windows path.
     """
     cam = Cpt(AxisDetectorCam, "cam1:")
-    image1 = Cpt(ImagePlugin, "Image1:")
     stats1 = Cpt(StatsPlugin, 'Stats1:')
     stats2 = Cpt(StatsPlugin, 'Stats2:')
     stats3 = Cpt(StatsPlugin, 'Stats3:')
