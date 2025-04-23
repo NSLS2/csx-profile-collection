@@ -141,3 +141,6 @@ target/
 *.hdf5
 *.hdf5
 *.hdf5
+dump.rdb
+
+**/auto-generated/

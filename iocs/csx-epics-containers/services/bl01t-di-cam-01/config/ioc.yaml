@@ -21,7 +21,10 @@ entities:
       dbpf XF:23ID1-ES{AXIS}cam1:AcquireTime 0.1
       dbpf XF:23ID1-ES{AXIS}image1:EnableCallbacks 1
       dbpf XF:23ID1-ES{AXIS}Proc1:EnableCallbacks 1
+      dbpf XF:23ID1-ES{AXIS}Proc2:EnableCallbacks 1
       dbpf XF:23ID1-ES{AXIS}Trans1:EnableCallbacks 1
+      dbpf XF:23ID1-ES{AXIS}Trans2:EnableCallbacks 1
+      dbpf XF:23ID1-ES{AXIS}Over1:EnableCallbacks 1
       dbpf XF:23ID1-ES{AXIS}ROI1:EnableCallbacks 1
       dbpf XF:23ID1-ES{AXIS}ROI2:EnableCallbacks 1
       dbpf XF:23ID1-ES{AXIS}ROI3:EnableCallbacks 1
@@ -52,17 +55,29 @@ entities:
     R: "Proc1:"
     NDARRAY_PORT: AXIS1
 
+  - type: ADCore.NDProcess
+    PORT: PROC2
+    P: "XF:23ID1-ES{AXIS}"
+    R: "Proc2:"
+    NDARRAY_PORT: AXIS1
+
   - type: ADCore.NDTransform
     PORT: TRANS1
     P: "XF:23ID1-ES{AXIS}"
     R: "Trans1:"
     NDARRAY_PORT: PROC1
 
+  - type: ADCore.NDTransform
+    PORT: TRANS2
+    P: "XF:23ID1-ES{AXIS}"
+    R: "Trans2:"
+    NDARRAY_PORT: PROC2
+
   - type: ADCore.NDOverlay
     PORT: OVER1
     P: "XF:23ID1-ES{AXIS}"
     R: "Over1:"
-    NDARRAY_PORT: TRANS1
+    NDARRAY_PORT: TRANS2
 
   - type: ADCore.NDROI
     PORT: ROI1

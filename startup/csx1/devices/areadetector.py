@@ -460,7 +460,9 @@ class AxisCamBase(AreaDetector):
     roi3 = Cpt(ROIPlugin, 'ROI3:')
     roi4 = Cpt(ROIPlugin, 'ROI4:')
     proc1 = Cpt(ProcessPlugin, 'Proc1:')
+    proc2 = Cpt(ProcessPlugin, 'Proc2:')
     trans1 = Cpt(TransformPlugin, 'Trans1:')
+    trans2 = Cpt(TransformPlugin, 'Trans2:')
     over1 = Cpt(OverlayPlugin, 'Over1:')
     hdf5 = Cpt(HDF5PluginWithFileStorePlain,
               suffix='HDF1:',
@@ -523,30 +525,25 @@ class ContinuousAxisCam(ContinuousAcquisitionTrigger, AxisCamBase):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        print(self.stage_sigs)
         self.ensure_nonblocking()
-        # Exclude specific plugins from being rerouted
-        self._excluded_plugin_names: set[str] = { }
+        # Include specific plugins to be rerouted to use the CB1 port
+        self._plugins_to_reroute: set[PluginBase] = {
+            self.hdf5,
+            self.proc1,
+            self.stats5,
+        }
+        # Cache of the original port for each rerouted plugin
         self._plugin_port_dict: dict[PluginBase, str] = {} 
 
         self._write_status: TriggerStatus | None = None
         self._num_triggered = 0
 
     def stage(self):
-        # Set all of the other plugins to use the CB1 port
+        # Set the plugins to use the CB1 port
         self._plugin_port_dict: dict[PluginBase, str] = {}
-        for name, dev in self.walk_subdevices(include_lazy=True):
-            # Skip rerouting plugins that are excluded
-            if name in self._excluded_plugin_names:
-                continue
-            # If the device is a plugin, ingests data from the cam port, and
-            # is not the CB plugin, then we need to update
-            # the ingest port to be from the CB plugin
-            if (isinstance(dev, PluginBase) and 
-                dev.nd_array_port.get() == self.cam.port_name.get() and
-                not isinstance(dev, CircularBuffPlugin)):
-                self._plugin_port_dict[dev] = dev.nd_array_port.get()
-                dev.nd_array_port.set(self.cb.port_name.get())
+        for dev in self._plugins_to_reroute:
+            self._plugin_port_dict[dev] = dev.nd_array_port.get()
+            dev.nd_array_port.set(self.cb.port_name.get())
 
         # MUST BE CALLED AFTER THE PLUGINS ARE SET UP
         # Otherwise, the HDF plugin will start writing from AXIS1 port before
@@ -569,7 +566,6 @@ class ContinuousAxisCam(ContinuousAcquisitionTrigger, AxisCamBase):
     def _hdf5_num_captured_changed(self, old_value, value, **kwargs):
         if self._write_status is None:
             return
-
         if value == self._write_status.target:
             self._write_status.set_finished()
             self._write_status = None
