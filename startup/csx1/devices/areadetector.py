@@ -243,10 +243,12 @@ class AxisDetectorCam(AreaDetectorCam):
     _default_configuration_attrs = AreaDetectorCam._default_configuration_attrs + (
         "gain",
         "tec"
+        "bin_mode",
     )
     wait_for_plugins = Cpt(EpicsSignal, "WaitForPlugins", string=True, kind="hinted")
     gain = Cpt(EpicsSignal, "GainMode", string=True, kind="config")
     tec = Cpt(EpicsSignal, "TEC", string=True, kind="config")
+    bin_mode = Cpt(EpicsSignal, "BinMode", string=True, kind="config")
     acquire_period = ADComponent(EpicsSignalWithRBV, "AcquirePeriod", tolerance=0.01, timeout=5, kind="config")
 
     def __init__(self, *args, **kwargs):
