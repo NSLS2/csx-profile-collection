@@ -242,7 +242,7 @@ class AxisDetectorCam(AreaDetectorCam):
     """
     _default_configuration_attrs = AreaDetectorCam._default_configuration_attrs + (
         "gain",
-        "tec"
+        "tec",
         "bin_mode",
     )
     wait_for_plugins = Cpt(EpicsSignal, "WaitForPlugins", string=True, kind="hinted")
