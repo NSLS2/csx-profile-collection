@@ -12,14 +12,12 @@ from pathlib import Path
 from csx1.analysis.callbacks import BECwithTicks
 
 ip = get_ipython()
-nslsii.configure_base(
-    ip.user_ns,
-    broker_name="csx",
-    redis_url="info.csx.nsls2.bnl.gov",
-    redis_prefix="",
-    publish_documents_with_kafka=True,
-    bec=False,
-)
+# Metadata stored in RedisJSONDict at url provided here
+nslsii.configure_base(ip.user_ns,
+                      'csx',
+                      publish_documents_with_kafka=True,
+                      bec=False,
+                      redis_url="info.csx.nsls2.bnl.gov")
 nslsii.configure_olog(ip.user_ns)
 
 bec = BECwithTicks()
