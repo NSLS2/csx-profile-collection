@@ -17,9 +17,9 @@ jobs:
       fail-fast: false
       matrix:
         repos:
-          - org: "NSLS-II-CSX"
-            repo: "profile_collection"
-            branch: ""
+          - org: "NSLS2"
+            repo: "csx-profile-collection"
+            branch: "main"
             beamline-acronym: "csx"
         zenodo:
           - url: "https://zenodo.org/records/15171538/files/2025-2.0-py310-tiled.tar.gz"
