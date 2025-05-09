@@ -1,7 +1,7 @@
 from ophyd.signal import EpicsSignalBase
+
 EpicsSignalBase.set_defaults(timeout=10, connection_timeout=10)  # new style
 # EpicsSignalBase.set_default_timeout(timeout=10, connection_timeout=10)  # old style
-
 
 
 import appdirs
