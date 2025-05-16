@@ -24,5 +24,7 @@ bec = BECwithTicks()
 peaks = bec.peaks  # just as alias for less typing
 RE.subscribe(bec)
 
+assert 1 == 2
+
 
 from csx1.startup import *
