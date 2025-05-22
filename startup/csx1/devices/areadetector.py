@@ -1,6 +1,7 @@
 import logging
-from typing import Union
+from typing import Union, Optional
 
+import networkx as nx
 from ophyd import (EpicsScaler, EpicsSignal, EpicsSignalRO, Device, BlueskyInterface,
                    SingleTrigger, HDF5Plugin, ImagePlugin, StatsPlugin,
                    ROIPlugin, TransformPlugin, OverlayPlugin, ProsilicaDetector, TIFFPlugin, Signal, Staged, CamBase)
@@ -180,8 +181,8 @@ class ContinuousAcquisitionTrigger(BlueskyInterface):
         # Order of operations is important here.
         self.stage_sigs.update(
             [
-                ("cam.acquire", 1),  # Start acquiring
                 ("cam.image_mode", self.cam.ImageMode.CONTINUOUS),  # 'Continuous' mode
+                ("cam.acquire", 1),  # Start acquiring
                 ("cb.flush_on_soft_trigger", 0),  # Flush the buffer on new image
                 ("cb.preset_trigger_count", 0),  # Keep the buffer capturing forever
                 # TODO: Figure out why this leaks an extra frame
@@ -444,6 +445,30 @@ class HDF5PluginWithFileStore(HDF5PluginSWMR, FileStoreHDF5IterativeWrite):
         self._ret = super().make_filename()
         return self._ret
 
+
+class PvaPluginWithPluginAttributes(PvaPlugin):
+    nd_array_port = Cpt(EpicsSignalWithRBV, "NDArrayPort", kind="config")
+    enable = Cpt(EpicsSignalWithRBV, "EnableCallbacks", string=True, kind="config")
+
+
+def set_plugin_graph(graph: dict[PluginBase, Union[CamBase, PluginBase]]) -> None:
+    for target, source in graph.items():
+        target.nd_array_port.set(source.port_name.get()).wait(0.5)
+
+    for plugin in graph.keys():
+        plugin.enable.set(1).wait(0.5)
+
+
+def flatten_plugin_graph(graph: nx.DiGraph, port_map: dict[str, Union[CamBase, PluginBase]]) -> dict[PluginBase, Union[CamBase, PluginBase]]:
+    edge_list = nx.to_edgelist(graph)
+
+    flat_graph = {}
+    for edge in edge_list:
+        flat_graph[port_map[edge[1]]] = port_map[edge[0]]
+
+    return flat_graph
+
+
 class AxisCamBase(AreaDetector):
     """
     Class for Axis detector with HDF5 file saving.
@@ -472,41 +497,8 @@ class AxisCamBase(AreaDetector):
               root='/nsls2/data/csx/legacy/axis_data/hdf5',
               write_path_template='Z:/hdf5/%Y/%m/%d', # From the IOC which is Windows
               path_semantics='windows')
-    pva1 = Cpt(PvaPlugin, 'PVA1:')
-
-    
-    __default_plugin_graph: dict[PluginBase, Union[CamBase, PluginBase]] = {
-        hdf5: cam,
-        stats5: cam,
-        proc1: cam,
-        proc2: cam,
-        trans1: proc1,
-        trans2: proc2,
-        roi1: trans1,
-        roi2: trans1,
-        roi3: trans1,
-        roi4: trans1,
-        stats1: roi1,
-        stats2: roi2,
-        stats3: roi3,
-        stats4: roi4,
-        over1: trans2,
-        pva1: over1,
-    }
-    """Known working state for the plugin graph.
-
-    This is a dictionary where the keys are the source plugins and the values
-    are the target plugins.
-
-    The current configuration is:
-        AXIS1 -> HDF5
-              -> STATS5
-              -> PROC1 -> TRANS1 -> ROI1 -> STATS1
-                                 -> ROI2 -> STATS2
-                                 -> ROI3 -> STATS3
-                                 -> ROI4 -> STATS4
-              -> PROC2 -> TRANS2 -> OVER1 -> PVA1
-    """
+    pva1 = Cpt(PvaPluginWithPluginAttributes, 'PVA1:')
+    _default_plugin_graph: Optional[dict[PluginBase, Union[CamBase, PluginBase]]] = None
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -516,18 +508,39 @@ class AxisCamBase(AreaDetector):
         # Camera is currently UInt16, the default is wrong at Int8
         self.cam.data_type.set("UInt16")
         self.additional_timeout = 0.0
-        ttime.sleep(1)
 
-    def reset_plugin_graph(self):
-        """Resets the plugin graph to the default configuration."""
+        # Known working state for the plugin graph.
+        self._default_plugin_graph = {
+            self.hdf5: self.cam,
+            self.stats5: self.cam,
+            self.proc1: self.cam,
+            self.proc2: self.cam,
+            self.trans1: self.proc1,
+            self.trans2: self.proc2,
+            self.roi1: self.trans1,
+            self.roi2: self.trans1,
+            self.roi3: self.trans1,
+            self.roi4: self.trans1,
+            self.stats1: self.roi1,
+            self.stats2: self.roi2,
+            self.stats3: self.roi3,
+            self.stats4: self.roi4,
+            self.over1: self.trans2,
+            self.pva1: self.over1,
+        }
+        self._use_default_plugin_graph: bool = True
+        self._plugin_graph_cache: Optional[dict[PluginBase, Union[CamBase, PluginBase]]] = None
 
-        # Configure the plugin graph using the resolved sources
-        for target, source in self.__default_plugin_graph.items():
-            target.nd_array_port.set(source.port_name.get()).wait(0.5)
-        
-        # Enable each plugin
-        for plugin in self.__default_plugin_graph.keys():
-            plugin.enable.set(1).wait(0.5)
+    @property
+    def default_plugin_graph(self) -> Optional[dict[PluginBase, Union[CamBase, PluginBase]]]:
+        return self._default_plugin_graph
+
+    def disable_default_plugin_graph(self):
+        logger.warning(f"Disabling default plugin graph for {self.name}. This can lead to unexpected behavior.")
+        self._use_default_plugin_graph = False
+
+    def enable_default_plugin_graph(self):
+        self._use_default_plugin_graph = True
 
     def stage(self):
         # Ensure we continue acquiring in case of failure
@@ -539,18 +552,30 @@ class AxisCamBase(AreaDetector):
         self.additional_timeout = exposure_time + acquire_period
         self.cam.acquire._timeout += self.additional_timeout
 
-        super().stage()
+        # Configure the plugin graph to use the default configuration
+        if self._use_default_plugin_graph and self.default_plugin_graph is not None:
+            self._plugin_graph_cache = flatten_plugin_graph(*self.get_asyn_digraph())
+            set_plugin_graph(self.default_plugin_graph)
+
+        ret = super().stage()
+        return ret
 
     def unstage(self):
         super().unstage()
+
+        # Reset the plugin graph to what it was before
+        if self._plugin_graph_cache is not None:
+            set_plugin_graph(self._plugin_graph_cache)
+            self._plugin_graph_cache = None
+
+        # Adjust timeout back to original value
+        self.cam.acquire._timeout -= self.additional_timeout
+
         # If the image mode was continuous, start acquiring again
         if self.ensure_acquiring:
             self.cam.image_mode.put("Continuous")
             ttime.sleep(1)
             self.cam.acquire.put(1)
-
-        # Adjust timeout back to original value
-        self.cam.acquire._timeout -= self.additional_timeout
 
     def ensure_nonblocking(self):
         self.stage_sigs["cam.wait_for_plugins"] = "No"
@@ -570,36 +595,55 @@ class StandardAxisCam(SingleTrigger, AxisCamBase):
 
 class ContinuousAxisCam(ContinuousAcquisitionTrigger, AxisCamBase):
     cb = Cpt(CircularBuffPlugin_V34, "CB1:")
+    """Known working state for the plugin graph.
+
+    This is a dictionary where the keys are the source plugins and the values
+    are the target plugins.
+
+    The current configuration is:
+        AXIS1 -> CB1 -> HDF5
+              -> CB1 -> STATS5
+              -> CB1 -> PROC1 -> TRANS1 -> ROI1 -> STATS1
+                                        -> ROI2 -> STATS2
+                                        -> ROI3 -> STATS3
+                                        -> ROI4 -> STATS4
+              -> PROC2 -> TRANS2 -> OVER1 -> PVA1
+    """
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.ensure_nonblocking()
-        # Include specific plugins to be rerouted to use the CB1 port
-        self._plugins_to_reroute: set[PluginBase] = {
-            self.hdf5,
-            self.proc1,
-            self.stats5,
-        }
-        # Cache of the original port for each rerouted plugin
-        self._plugin_port_dict: dict[PluginBase, str] = {} 
 
         self._write_status: TriggerStatus | None = None
         self._num_triggered = 0
 
-    def stage(self):
-        # Set the plugins to use the CB1 port
-        self._plugin_port_dict: dict[PluginBase, str] = {}
-        for dev in self._plugins_to_reroute:
-            self._plugin_port_dict[dev] = dev.nd_array_port.get()
-            dev.nd_array_port.set(self.cb.port_name.get())
+        self._default_plugin_graph = {
+            self.cb: self.cam,
+            self.hdf5: self.cb,
+            self.stats5: self.cb,
+            self.proc1: self.cb,
+            self.proc2: self.cam,
+            self.trans1: self.proc1,
+            self.trans2: self.proc2,
+            self.roi1: self.trans1,
+            self.roi2: self.trans1,
+            self.roi3: self.trans1,
+            self.roi4: self.trans1,
+            self.stats1: self.roi1,
+            self.stats2: self.roi2,
+            self.stats3: self.roi3,
+            self.stats4: self.roi4,
+            self.over1: self.trans2,
+            self.pva1: self.over1,
+        }
 
-        # MUST BE CALLED AFTER THE PLUGINS ARE SET UP
-        # Otherwise, the HDF plugin will start writing from AXIS1 port before
-        # the ports get switched
-        super().stage()
+    def stage(self):
+        res = super().stage()
 
         self.hdf5.num_captured.subscribe(self._hdf5_num_captured_changed)
         self._num_triggered = 0
+
+        return res
 
     def trigger(self):
         """
@@ -620,10 +664,6 @@ class ContinuousAxisCam(ContinuousAcquisitionTrigger, AxisCamBase):
 
     def unstage(self):
         super().unstage()
-        # Reset all of the changed plugin ports to what they were before
-        for dev, old_port in self._plugin_port_dict.items():
-            dev.nd_array_port.set(old_port)
-        self._plugin_port_dict = {} 
 
         self.hdf5.num_captured.unsubscribe(self._hdf5_num_captured_changed)
         self._num_triggered = 0
