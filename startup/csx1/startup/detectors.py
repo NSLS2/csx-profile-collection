@@ -19,7 +19,7 @@ from ..devices.areadetector import (StandardCam, NoStatsCam,
                                     StageOnFirstTrigger,
                                     MonitorStatsCam,
                                     StandardProsilicaWithHDF5, StandardProsilicaWithTIFF, #TODOpmab - added to try to save (inspired from SIX)
-                                    StandardAxisCam, ContinuousAxisCam) 
+                                    StandardAxisCam, ContinuousAxisCam, set_plugin_graph, flatten_plugin_graph) 
 
 from ..startup import db
 

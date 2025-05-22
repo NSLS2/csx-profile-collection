@@ -34,7 +34,7 @@ entities:
       dbpf XF:23ID1-ES{AXIS}Stats3:EnableCallbacks 1
       dbpf XF:23ID1-ES{AXIS}Stats4:EnableCallbacks 1
       dbpf XF:23ID1-ES{AXIS}Stats5:EnableCallbacks 1
-      dbpf XF:23ID1-ES{AXIS}PVA:EnableCallbacks 1
+      dbpf XF:23ID1-ES{AXIS}PVA1:EnableCallbacks 1
       dbpf XF:23ID1-ES{AXIS}HDF1:EnableCallbacks 1
       dbpf XF:23ID1-ES{AXIS}TIFF1:EnableCallbacks 1
       dbpf XF:23ID1-ES{AXIS}cam1:SimMode Peaks
@@ -104,10 +104,10 @@ entities:
     NDARRAY_PORT: TRANS1
 
   - type: ADCore.NDPvaPlugin
-    PORT: PVA
-    PVNAME: XF:23ID1-ES{AXIS}PVA:OUTPUT
+    PORT: PVA1
+    PVNAME: XF:23ID1-ES{AXIS}PVA1:OUTPUT
     P: "XF:23ID1-ES{AXIS}"
-    R: "PVA:"
+    R: "PVA1:"
     NDARRAY_PORT: OVER1
 
   - type: ADCore.NDStdArrays
