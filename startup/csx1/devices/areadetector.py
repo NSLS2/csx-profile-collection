@@ -523,11 +523,11 @@ class AxisCamBase(AreaDetector):
 
         # Configure the plugin graph using the resolved sources
         for target, source in self.__default_plugin_graph.items():
-            target.nd_array_port.set(source.port_name.get()).wait()
+            target.nd_array_port.set(source.port_name.get()).wait(0.5)
         
         # Enable each plugin
         for plugin in self.__default_plugin_graph.keys():
-            plugin.enable.set(1).wait()
+            plugin.enable.set(1).wait(0.5)
 
     def stage(self):
         # Ensure we continue acquiring in case of failure
