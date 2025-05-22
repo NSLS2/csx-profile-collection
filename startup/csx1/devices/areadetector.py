@@ -475,17 +475,23 @@ class AxisCamBase(AreaDetector):
     pva1 = Cpt(PvaPlugin, 'PVA1:')
 
     
-    __default_plugin_graph: dict[Union[CamBase, PluginBase], tuple[PluginBase, ...]]  = {
-        cam: (hdf5, stats5, proc1, proc2),
-        roi1: (stats1,),
-        roi2: (stats2,),
-        roi3: (stats3,),
-        roi4: (stats4,),
-        proc1: (trans1,),
-        proc2: (trans2,),
-        trans1: (roi1, roi2, roi3, roi4),
-        trans2: (over1,),
-        over1: (pva1,),
+    __default_plugin_graph: dict[PluginBase, Union[CamBase, PluginBase]] = {
+        hdf5: cam,
+        stats5: cam,
+        proc1: cam,
+        proc2: cam,
+        trans1: proc1,
+        trans2: proc2,
+        roi1: trans1,
+        roi2: trans1,
+        roi3: trans1,
+        roi4: trans1,
+        stats1: roi1,
+        stats2: roi2,
+        stats3: roi3,
+        stats4: roi4,
+        over1: trans2,
+        pva1: over1,
     }
     """Known working state for the plugin graph.
 
@@ -515,9 +521,13 @@ class AxisCamBase(AreaDetector):
     def reset_plugin_graph(self):
         """Resets the plugin graph to the default configuration."""
 
-        for source, targets in self.__default_plugin_graph.items():
-            for target in targets:
-                target.nd_array_port.set(source.port_name.get()).wait()
+        # Configure the plugin graph using the resolved sources
+        for target, source in self.__default_plugin_graph.items():
+            target.nd_array_port.set(source.port_name.get()).wait()
+        
+        # Enable each plugin
+        for plugin in self.__default_plugin_graph.keys():
+            plugin.enable.set(1).wait()
 
     def stage(self):
         # Ensure we continue acquiring in case of failure
