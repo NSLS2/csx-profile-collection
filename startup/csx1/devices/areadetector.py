@@ -509,25 +509,6 @@ class AxisCamBase(AreaDetector):
         self.cam.data_type.set("UInt16")
         self.additional_timeout = 0.0
 
-        # Known working state for the plugin graph.
-        self._default_plugin_graph = {
-            self.hdf5: self.cam,
-            self.stats5: self.cam,
-            self.proc1: self.cam,
-            self.proc2: self.cam,
-            self.trans1: self.proc1,
-            self.trans2: self.proc2,
-            self.roi1: self.trans1,
-            self.roi2: self.trans1,
-            self.roi3: self.trans1,
-            self.roi4: self.trans1,
-            self.stats1: self.roi1,
-            self.stats2: self.roi2,
-            self.stats3: self.roi3,
-            self.stats4: self.roi4,
-            self.over1: self.trans2,
-            self.pva1: self.over1,
-        }
         self._use_default_plugin_graph: bool = True
         self._plugin_graph_cache: Optional[dict[PluginBase, Union[CamBase, PluginBase]]] = None
 
@@ -588,19 +569,53 @@ class AxisCamBase(AreaDetector):
 
 
 class StandardAxisCam(SingleTrigger, AxisCamBase):
+    """Axis detector that runs in multiple acquisition mode.
+
+    It runs in blocking mode by default to ensure that file
+    writing is complete before acquisition continues.
+
+    The defualt plugin configuration is:
+        AXIS1 -> HDF5
+              -> STATS5
+              -> PROC1 -> TRANS1 -> ROI1 -> STATS1
+                                 -> ROI2 -> STATS2
+                                 -> ROI3 -> STATS3
+                                 -> ROI4 -> STATS4
+              -> PROC2 -> TRANS2 -> OVER1 -> PVA1
+    """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.stage_sigs["cam.wait_for_plugins"] = "Yes"
+        self._default_plugin_graph = {
+            self.hdf5: self.cam,
+            self.stats5: self.cam,
+            self.proc1: self.cam,
+            self.proc2: self.cam,
+            self.trans1: self.proc1,
+            self.trans2: self.proc2,
+            self.roi1: self.trans1,
+            self.roi2: self.trans1,
+            self.roi3: self.trans1,
+            self.roi4: self.trans1,
+            self.stats1: self.roi1,
+            self.stats2: self.roi2,
+            self.stats3: self.roi3,
+            self.stats4: self.roi4,
+            self.over1: self.trans2,
+            self.pva1: self.over1,
+        }
 
 
 class ContinuousAxisCam(ContinuousAcquisitionTrigger, AxisCamBase):
-    cb = Cpt(CircularBuffPlugin_V34, "CB1:")
-    """Known working state for the plugin graph.
+    """Axis detector that runs in continuous acquisition mode.
 
-    This is a dictionary where the keys are the source plugins and the values
-    are the target plugins.
+    It uses a circular buffer plugin to trigger capturing frames
+    from the detector *driver* instead of directly from the detector.
 
-    The current configuration is:
+    It runs in non-blocking mode by default so that any displays can
+    update asynchronously from Bluesky plans.
+
+    The defualt plugin configuration is:
         AXIS1 -> CB1 -> HDF5
               -> CB1 -> STATS5
               -> CB1 -> PROC1 -> TRANS1 -> ROI1 -> STATS1
@@ -609,6 +624,7 @@ class ContinuousAxisCam(ContinuousAcquisitionTrigger, AxisCamBase):
                                         -> ROI4 -> STATS4
               -> PROC2 -> TRANS2 -> OVER1 -> PVA1
     """
+    cb = Cpt(CircularBuffPlugin_V34, "CB1:")
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
