@@ -1,13 +1,15 @@
 import logging
+from typing import Union
+
 from ophyd import (EpicsScaler, EpicsSignal, EpicsSignalRO, Device, BlueskyInterface,
                    SingleTrigger, HDF5Plugin, ImagePlugin, StatsPlugin,
-                   ROIPlugin, TransformPlugin, OverlayPlugin, ProsilicaDetector, TIFFPlugin, Signal, Staged)
+                   ROIPlugin, TransformPlugin, OverlayPlugin, ProsilicaDetector, TIFFPlugin, Signal, Staged, CamBase)
 
 from ophyd.areadetector.cam import AreaDetectorCam
 from ophyd.areadetector.detectors import DetectorBase
 from ophyd.areadetector.filestore_mixins import FileStoreHDF5IterativeWrite, FileStoreTIFFIterativeWrite, resource_factory
 from ophyd.areadetector import ADComponent, EpicsSignalWithRBV
-from ophyd.areadetector.plugins import PluginBase, ProcessPlugin, HDF5Plugin_V22, TIFFPlugin_V22, CircularBuffPlugin_V34, CircularBuffPlugin
+from ophyd.areadetector.plugins import PluginBase, ProcessPlugin, HDF5Plugin_V22, TIFFPlugin_V22, CircularBuffPlugin_V34, CircularBuffPlugin, PvaPlugin
 from ophyd import Component as Cpt, DeviceStatus
 from ophyd.device import FormattedComponent as FCpt
 from ophyd import AreaDetector
@@ -442,7 +444,6 @@ class HDF5PluginWithFileStore(HDF5PluginSWMR, FileStoreHDF5IterativeWrite):
         self._ret = super().make_filename()
         return self._ret
 
-
 class AxisCamBase(AreaDetector):
     """
     Class for Axis detector with HDF5 file saving.
@@ -471,6 +472,35 @@ class AxisCamBase(AreaDetector):
               root='/nsls2/data/csx/legacy/axis_data/hdf5',
               write_path_template='Z:/hdf5/%Y/%m/%d', # From the IOC which is Windows
               path_semantics='windows')
+    pva1 = Cpt(PvaPlugin, 'PVA1:')
+
+    
+    __default_plugin_graph: dict[Union[CamBase, PluginBase], tuple[PluginBase, ...]]  = {
+        cam: (hdf5, stats5, proc1, proc2),
+        roi1: (stats1,),
+        roi2: (stats2,),
+        roi3: (stats3,),
+        roi4: (stats4,),
+        proc1: (trans1,),
+        proc2: (trans2,),
+        trans1: (roi1, roi2, roi3, roi4),
+        trans2: (over1,),
+        over1: (pva1,),
+    }
+    """Known working state for the plugin graph.
+
+    This is a dictionary where the keys are the source plugins and the values
+    are the target plugins.
+
+    The current configuration is:
+        AXIS1 -> HDF5
+              -> STATS5
+              -> PROC1 -> TRANS1 -> ROI1 -> STATS1
+                                 -> ROI2 -> STATS2
+                                 -> ROI3 -> STATS3
+                                 -> ROI4 -> STATS4
+              -> PROC2 -> TRANS2 -> OVER1 -> PVA1
+    """
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -481,6 +511,13 @@ class AxisCamBase(AreaDetector):
         self.cam.data_type.set("UInt16")
         self.additional_timeout = 0.0
         ttime.sleep(1)
+
+    def reset_plugin_graph(self):
+        """Resets the plugin graph to the default configuration."""
+
+        for source, targets in self.__default_plugin_graph.items():
+            for target in targets:
+                target.nd_array_port.set(source.port_name.get()).wait()
 
     def stage(self):
         # Ensure we continue acquiring in case of failure
