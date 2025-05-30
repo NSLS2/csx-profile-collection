@@ -524,7 +524,10 @@ class AxisCamBase(AreaDetector):
 
     def stage(self):
         # Ensure we continue acquiring in case of failure
-        self.ensure_acquiring = self.cam.image_mode.get() == "Continuous" and self.cam.acquire.get() == 1
+        self.ensure_acquiring = (
+            self.cam.image_mode.get(as_string=True) == "Continuous" and
+            self.cam.acquire.get() == 1
+        )
 
         # Adjust timeout relative to acquire_time and acquire_period
         exposure_time = self.cam.acquire_time.get()
@@ -547,10 +550,15 @@ class AxisCamBase(AreaDetector):
         self.cam.acquire._timeout -= self.additional_timeout
 
         # If the image mode was continuous, start acquiring again
-        if self.ensure_acquiring:
-            self.cam.image_mode.put("Continuous")
-            ttime.sleep(1)
-            self.cam.acquire.put(1)
+        acquiring = self.cam.acquire.get()
+        if self.ensure_acquiring and acquiring == 0:
+            self.cam.acquire.set(1).wait(3.0)
+        # Otherwise, we were in continuous mode but not acquiring
+        # so stop the acquisiton again
+        elif (not self.ensure_acquiring
+              and self.cam.image_mode.get(as_string=True) == "Continuous"
+              and acquiring == 1):
+            self.cam.acquire.set(0).wait(3.0)
 
     def ensure_nonblocking(self):
         self.stage_sigs["cam.wait_for_plugins"] = "No"
@@ -579,7 +587,10 @@ class StandardAxisCam(SingleTrigger, AxisCamBase):
     """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.stage_sigs["cam.wait_for_plugins"] = "Yes"
+        self.stage_sigs[self.cam.wait_for_plugins] = "Yes"
+        # Changing image_mode stops acquisition every time
+        # so using stage_sigs doesn't work
+        self.stage_sigs.pop("cam.acquire")
         self._default_plugin_graph = {
             self.hdf5: self.cam,
             self.stats5: self.cam,
@@ -598,6 +609,15 @@ class StandardAxisCam(SingleTrigger, AxisCamBase):
             self.over1: self.trans2,
             self.pva1: self.over1,
         }
+
+    def stage(self):
+        ret = super().stage()
+
+        # Manually stop acquiring
+        if self.cam.acquire.get() == 1:
+            self.cam.acquire.set(0).wait(3.0)
+
+        return ret
 
 
 class ContinuousAxisCam(ContinuousAcquisitionTrigger, AxisCamBase):
@@ -622,6 +642,9 @@ class ContinuousAxisCam(ContinuousAcquisitionTrigger, AxisCamBase):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        # Changing the image_mode stops acquisition already
+        # so we can't use stage_sigs
+        self.stage_sigs.pop("cam.acquire")
         self.ensure_nonblocking()
 
         self._write_status: TriggerStatus | None = None
@@ -654,6 +677,10 @@ class ContinuousAxisCam(ContinuousAcquisitionTrigger, AxisCamBase):
 
         self.hdf5.num_captured.subscribe(self._hdf5_num_captured_changed)
         self._num_triggered = 0
+
+        # Manually start acquiring
+        if self.cam.acquire.get() == 0:
+            self.cam.acquire.set(1).wait(3.0)
 
         return res
 
