@@ -459,16 +459,6 @@ def set_plugin_graph(graph: dict[PluginBase, Union[CamBase, PluginBase]]) -> Non
         plugin.enable.set(1).wait(0.5)
 
 
-def flatten_plugin_graph(graph: nx.DiGraph, port_map: dict[str, Union[CamBase, PluginBase]]) -> dict[PluginBase, Union[CamBase, PluginBase]]:
-    edge_list = nx.to_edgelist(graph)
-
-    flat_graph = {}
-    for edge in edge_list:
-        flat_graph[port_map[edge[1]]] = port_map[edge[0]]
-
-    return flat_graph
-
-
 class AxisCamBase(AreaDetector):
     """
     Class for Axis detector with HDF5 file saving.
@@ -497,7 +487,7 @@ class AxisCamBase(AreaDetector):
               root='/nsls2/data/csx/legacy/axis_data/hdf5',
               write_path_template='Z:/hdf5/%Y/%m/%d', # From the IOC which is Windows
               path_semantics='windows')
-    pva1 = Cpt(PvaPluginWithPluginAttributes, 'PVA1:')
+    pva1 = Cpt(PvaPluginWithPluginAttributes, 'Pva1:')
     _default_plugin_graph: Optional[dict[PluginBase, Union[CamBase, PluginBase]]] = None
 
     def __init__(self, *args, **kwargs):
@@ -523,6 +513,15 @@ class AxisCamBase(AreaDetector):
     def enable_default_plugin_graph(self):
         self._use_default_plugin_graph = True
 
+    def _stage_plugin_graph(self, plugin_graph: dict[PluginBase, Union[CamBase, PluginBase]]):
+        for target, source in plugin_graph.items():
+            self.stage_sigs[target.nd_array_port] = source.port_name.get()
+            self.stage_sigs[target.enable] = True
+
+    def reset_plugin_graph(self):
+        """Resets the plugin graph to the default state."""
+        set_plugin_graph(self.default_plugin_graph)
+
     def stage(self):
         # Ensure we continue acquiring in case of failure
         self.ensure_acquiring = self.cam.image_mode.get() == "Continuous" and self.cam.acquire.get() == 1
@@ -534,20 +533,15 @@ class AxisCamBase(AreaDetector):
         self.cam.acquire._timeout += self.additional_timeout
 
         # Configure the plugin graph to use the default configuration
+        # Must use `stage_sigs` in order to reset on unstage
         if self._use_default_plugin_graph and self.default_plugin_graph is not None:
-            self._plugin_graph_cache = flatten_plugin_graph(*self.get_asyn_digraph())
-            set_plugin_graph(self.default_plugin_graph)
+            self._stage_plugin_graph(self.default_plugin_graph)
 
         ret = super().stage()
         return ret
 
     def unstage(self):
         super().unstage()
-
-        # Reset the plugin graph to what it was before
-        if self._plugin_graph_cache is not None:
-            set_plugin_graph(self._plugin_graph_cache)
-            self._plugin_graph_cache = None
 
         # Adjust timeout back to original value
         self.cam.acquire._timeout -= self.additional_timeout
