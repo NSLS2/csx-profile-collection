@@ -648,6 +648,8 @@ class ContinuousAxisCam(ContinuousAcquisitionTrigger, AxisCamBase):
         }
 
     def stage(self):
+        self.stage_sigs[self.cb.post_count] = self.cam.num_images.get()
+
         res = super().stage()
 
         self.hdf5.num_captured.subscribe(self._hdf5_num_captured_changed)
