@@ -1,13 +1,16 @@
 import logging
+from typing import Union, Optional
+
+import networkx as nx
 from ophyd import (EpicsScaler, EpicsSignal, EpicsSignalRO, Device, BlueskyInterface,
                    SingleTrigger, HDF5Plugin, ImagePlugin, StatsPlugin,
-                   ROIPlugin, TransformPlugin, OverlayPlugin, ProsilicaDetector, TIFFPlugin, Signal, Staged)
+                   ROIPlugin, TransformPlugin, OverlayPlugin, ProsilicaDetector, TIFFPlugin, Signal, Staged, CamBase)
 
 from ophyd.areadetector.cam import AreaDetectorCam
 from ophyd.areadetector.detectors import DetectorBase
 from ophyd.areadetector.filestore_mixins import FileStoreHDF5IterativeWrite, FileStoreTIFFIterativeWrite, resource_factory
 from ophyd.areadetector import ADComponent, EpicsSignalWithRBV
-from ophyd.areadetector.plugins import PluginBase, ProcessPlugin, HDF5Plugin_V22, TIFFPlugin_V22, CircularBuffPlugin_V34, CircularBuffPlugin
+from ophyd.areadetector.plugins import PluginBase, ProcessPlugin, HDF5Plugin_V22, TIFFPlugin_V22, CircularBuffPlugin_V34, CircularBuffPlugin, PvaPlugin
 from ophyd import Component as Cpt, DeviceStatus
 from ophyd.device import FormattedComponent as FCpt
 from ophyd import AreaDetector
@@ -178,8 +181,8 @@ class ContinuousAcquisitionTrigger(BlueskyInterface):
         # Order of operations is important here.
         self.stage_sigs.update(
             [
-                ("cam.acquire", 1),  # Start acquiring
                 ("cam.image_mode", self.cam.ImageMode.CONTINUOUS),  # 'Continuous' mode
+                ("cam.acquire", 1),  # Start acquiring
                 ("cb.flush_on_soft_trigger", 0),  # Flush the buffer on new image
                 ("cb.preset_trigger_count", 0),  # Keep the buffer capturing forever
                 # TODO: Figure out why this leaks an extra frame
@@ -443,6 +446,19 @@ class HDF5PluginWithFileStore(HDF5PluginSWMR, FileStoreHDF5IterativeWrite):
         return self._ret
 
 
+class PvaPluginWithPluginAttributes(PvaPlugin):
+    nd_array_port = Cpt(EpicsSignalWithRBV, "NDArrayPort", kind="config")
+    enable = Cpt(EpicsSignalWithRBV, "EnableCallbacks", string=True, kind="config")
+
+
+def set_plugin_graph(graph: dict[PluginBase, Union[CamBase, PluginBase]]) -> None:
+    for target, source in graph.items():
+        target.nd_array_port.set(source.port_name.get()).wait(0.5)
+
+    for plugin in graph.keys():
+        plugin.enable.set(1).wait(0.5)
+
+
 class AxisCamBase(AreaDetector):
     """
     Class for Axis detector with HDF5 file saving.
@@ -471,6 +487,8 @@ class AxisCamBase(AreaDetector):
               root='/nsls2/data/csx/legacy/axis_data/hdf5',
               write_path_template='Z:/hdf5/%Y/%m/%d', # From the IOC which is Windows
               path_semantics='windows')
+    pva1 = Cpt(PvaPluginWithPluginAttributes, 'Pva1:')
+    _default_plugin_graph: Optional[dict[PluginBase, Union[CamBase, PluginBase]]] = None
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -480,7 +498,29 @@ class AxisCamBase(AreaDetector):
         # Camera is currently UInt16, the default is wrong at Int8
         self.cam.data_type.set("UInt16")
         self.additional_timeout = 0.0
-        ttime.sleep(1)
+
+        self._use_default_plugin_graph: bool = True
+        self._plugin_graph_cache: Optional[dict[PluginBase, Union[CamBase, PluginBase]]] = None
+
+    @property
+    def default_plugin_graph(self) -> Optional[dict[PluginBase, Union[CamBase, PluginBase]]]:
+        return self._default_plugin_graph
+
+    def disable_default_plugin_graph(self):
+        logger.warning(f"Disabling default plugin graph for {self.name}. This can lead to unexpected behavior.")
+        self._use_default_plugin_graph = False
+
+    def enable_default_plugin_graph(self):
+        self._use_default_plugin_graph = True
+
+    def _stage_plugin_graph(self, plugin_graph: dict[PluginBase, Union[CamBase, PluginBase]]):
+        for target, source in plugin_graph.items():
+            self.stage_sigs[target.nd_array_port] = source.port_name.get()
+            self.stage_sigs[target.enable] = True
+
+    def reset_plugin_graph(self):
+        """Resets the plugin graph to the default state."""
+        set_plugin_graph(self.default_plugin_graph)
 
     def stage(self):
         # Ensure we continue acquiring in case of failure
@@ -492,18 +532,25 @@ class AxisCamBase(AreaDetector):
         self.additional_timeout = exposure_time + acquire_period
         self.cam.acquire._timeout += self.additional_timeout
 
-        super().stage()
+        # Configure the plugin graph to use the default configuration
+        # Must use `stage_sigs` in order to reset on unstage
+        if self._use_default_plugin_graph and self.default_plugin_graph is not None:
+            self._stage_plugin_graph(self.default_plugin_graph)
+
+        ret = super().stage()
+        return ret
 
     def unstage(self):
         super().unstage()
+
+        # Adjust timeout back to original value
+        self.cam.acquire._timeout -= self.additional_timeout
+
         # If the image mode was continuous, start acquiring again
         if self.ensure_acquiring:
             self.cam.image_mode.put("Continuous")
             ttime.sleep(1)
             self.cam.acquire.put(1)
-
-        # Adjust timeout back to original value
-        self.cam.acquire._timeout -= self.additional_timeout
 
     def ensure_nonblocking(self):
         self.stage_sigs["cam.wait_for_plugins"] = "No"
@@ -516,43 +563,99 @@ class AxisCamBase(AreaDetector):
 
 
 class StandardAxisCam(SingleTrigger, AxisCamBase):
+    """Axis detector that runs in multiple acquisition mode.
+
+    It runs in blocking mode by default to ensure that file
+    writing is complete before acquisition continues.
+
+    The defualt plugin configuration is:
+        AXIS1 -> HDF5
+              -> STATS5
+              -> PROC1 -> TRANS1 -> ROI1 -> STATS1
+                                 -> ROI2 -> STATS2
+                                 -> ROI3 -> STATS3
+                                 -> ROI4 -> STATS4
+              -> PROC2 -> TRANS2 -> OVER1 -> PVA1
+    """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.stage_sigs["cam.wait_for_plugins"] = "Yes"
+        self._default_plugin_graph = {
+            self.hdf5: self.cam,
+            self.stats5: self.cam,
+            self.proc1: self.cam,
+            self.proc2: self.cam,
+            self.trans1: self.proc1,
+            self.trans2: self.proc2,
+            self.roi1: self.trans1,
+            self.roi2: self.trans1,
+            self.roi3: self.trans1,
+            self.roi4: self.trans1,
+            self.stats1: self.roi1,
+            self.stats2: self.roi2,
+            self.stats3: self.roi3,
+            self.stats4: self.roi4,
+            self.over1: self.trans2,
+            self.pva1: self.over1,
+        }
 
 
 class ContinuousAxisCam(ContinuousAcquisitionTrigger, AxisCamBase):
+    """Axis detector that runs in continuous acquisition mode.
+
+    It uses a circular buffer plugin to trigger capturing frames
+    from the detector *driver* instead of directly from the detector.
+
+    It runs in non-blocking mode by default so that any displays can
+    update asynchronously from Bluesky plans.
+
+    The defualt plugin configuration is:
+        AXIS1 -> CB1 -> HDF5
+              -> CB1 -> STATS5
+              -> CB1 -> PROC1 -> TRANS1 -> ROI1 -> STATS1
+                                        -> ROI2 -> STATS2
+                                        -> ROI3 -> STATS3
+                                        -> ROI4 -> STATS4
+              -> PROC2 -> TRANS2 -> OVER1 -> PVA1
+    """
     cb = Cpt(CircularBuffPlugin_V34, "CB1:")
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.ensure_nonblocking()
-        # Include specific plugins to be rerouted to use the CB1 port
-        self._plugins_to_reroute: set[PluginBase] = {
-            self.hdf5,
-            self.proc1,
-            self.stats5,
-        }
-        # Cache of the original port for each rerouted plugin
-        self._plugin_port_dict: dict[PluginBase, str] = {} 
 
         self._write_status: TriggerStatus | None = None
         self._num_triggered = 0
 
-    def stage(self):
-        # Set the plugins to use the CB1 port
-        self._plugin_port_dict: dict[PluginBase, str] = {}
-        for dev in self._plugins_to_reroute:
-            self._plugin_port_dict[dev] = dev.nd_array_port.get()
-            dev.nd_array_port.set(self.cb.port_name.get())
+        self._default_plugin_graph = {
+            self.cb: self.cam,
+            self.hdf5: self.cb,
+            self.stats5: self.cb,
+            self.proc1: self.cb,
+            self.proc2: self.cam,
+            self.trans1: self.proc1,
+            self.trans2: self.proc2,
+            self.roi1: self.trans1,
+            self.roi2: self.trans1,
+            self.roi3: self.trans1,
+            self.roi4: self.trans1,
+            self.stats1: self.roi1,
+            self.stats2: self.roi2,
+            self.stats3: self.roi3,
+            self.stats4: self.roi4,
+            self.over1: self.trans2,
+            self.pva1: self.over1,
+        }
 
-        # MUST BE CALLED AFTER THE PLUGINS ARE SET UP
-        # Otherwise, the HDF plugin will start writing from AXIS1 port before
-        # the ports get switched
-        super().stage()
+    def stage(self):
+        self.stage_sigs[self.cb.post_count] = self.cam.num_images.get()
+
+        res = super().stage()
 
         self.hdf5.num_captured.subscribe(self._hdf5_num_captured_changed)
         self._num_triggered = 0
+
+        return res
 
     def trigger(self):
         """
@@ -573,10 +676,6 @@ class ContinuousAxisCam(ContinuousAcquisitionTrigger, AxisCamBase):
 
     def unstage(self):
         super().unstage()
-        # Reset all of the changed plugin ports to what they were before
-        for dev, old_port in self._plugin_port_dict.items():
-            dev.nd_array_port.set(old_port)
-        self._plugin_port_dict = {} 
 
         self.hdf5.num_captured.unsubscribe(self._hdf5_num_captured_changed)
         self._num_triggered = 0
