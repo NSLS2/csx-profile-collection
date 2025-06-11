@@ -485,15 +485,15 @@ class AxisCamBase(AreaDetector):
               suffix='HDF1:',
               read_path_template='/nsls2/data/csx/legacy/axis_data/hdf5/%Y/%m/%d',
               root='/nsls2/data/csx/legacy/axis_data/hdf5',
-              write_path_template='Z:/hdf5/%Y/%m/%d', # From the IOC which is Windows
-              path_semantics='windows')
+              write_path_template='/nsls2/data/csx/legacy/axis_data/hdf5/%Y/%m/%d',
+              path_semantics='posix')
     pva1 = Cpt(PvaPluginWithPluginAttributes, 'Pva1:')
     _default_plugin_graph: Optional[dict[PluginBase, Union[CamBase, PluginBase]]] = None
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.hdf5.kind = "normal"
-        self.hdf5.file_path.path_semantics = "nt" # windows path semantics
+        self.hdf5.file_path.path_semantics = "posix"
         self.ensure_acquiring = False
         # Camera is currently UInt16, the default is wrong at Int8
         self.cam.data_type.set("UInt16")
@@ -573,8 +573,10 @@ class AxisCamBase(AreaDetector):
 class StandardAxisCam(SingleTrigger, AxisCamBase):
     """Axis detector that runs in multiple acquisition mode.
 
-    It runs in blocking mode by default to ensure that file
-    writing is complete before acquisition continues.
+    It runs in non-blocking mode by default so that capturing
+    frames is not slowed down by the cumulative execution time of the plugins.
+
+    This may mean that the file writing is not complete before subsequent acquisitions.
 
     The defualt plugin configuration is:
         AXIS1 -> HDF5
@@ -587,10 +589,12 @@ class StandardAxisCam(SingleTrigger, AxisCamBase):
     """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.stage_sigs[self.cam.wait_for_plugins] = "Yes"
+        self.stage_sigs[self.cam.wait_for_plugins] = "No"
         # Changing image_mode stops acquisition every time
         # so using stage_sigs doesn't work
         self.stage_sigs.pop("cam.acquire")
+        self.ensure_nonblocking()
+
         self._default_plugin_graph = {
             self.hdf5: self.cam,
             self.stats5: self.cam,
