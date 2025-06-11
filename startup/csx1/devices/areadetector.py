@@ -573,8 +573,10 @@ class AxisCamBase(AreaDetector):
 class StandardAxisCam(SingleTrigger, AxisCamBase):
     """Axis detector that runs in multiple acquisition mode.
 
-    It runs in blocking mode by default to ensure that file
-    writing is complete before acquisition continues.
+    It runs in non-blocking mode by default so that capturing
+    frames is not slowed down by the cumulative execution time of the plugins.
+
+    This may mean that the file writing is not complete before subsequent acquisitions.
 
     The defualt plugin configuration is:
         AXIS1 -> HDF5
