@@ -645,7 +645,8 @@ class ContinuousAxisCam(ContinuousAcquisitionTrigger, AxisCamBase):
               -> PROC2 -> TRANS2 -> OVER1 -> PVA1
     """
     cb = Cpt(CircularBuffPlugin_V34, "CB1:")
-    should_skip_frame = Cpt(Signal, kind="config", value=False)
+    # This is for regulating exposure during possible movements
+    should_skip_frame = Cpt(Signal, kind="config", value=True)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -701,7 +702,6 @@ class ContinuousAxisCam(ContinuousAcquisitionTrigger, AxisCamBase):
         for plugin in self._leaf_plugins:
             plugin.array_counter.set(0).wait()
 
-        print("Done staging.")
         return res
 
     def _skip_frame(self):
@@ -711,7 +711,6 @@ class ContinuousAxisCam(ContinuousAcquisitionTrigger, AxisCamBase):
         SubscriptionStatus(self.cam.num_images_counter, frame_changed).wait(timeout=self.cam.acquire_period.get() + 1e-5)
 
     def _plugin_complete(self, old_value, value, **kwargs) -> bool:
-        print(f"{value=}/{self.cb.post_count.get() * self._num_triggered}")
         return value == self.cb.post_count.get() * self._num_triggered
 
     def trigger(self):
@@ -723,7 +722,6 @@ class ContinuousAxisCam(ContinuousAcquisitionTrigger, AxisCamBase):
             # We must wait until this first frame is complete before we can
             # start exposing a new frame. Otherwise, we may grab a frame
             # that was exposing during a movement (of a motor or energy or temperature value)
-            print("skipping frame")
             self._skip_frame()
 
         # Trigger the circular buffer with the fully exposed frame
@@ -732,7 +730,6 @@ class ContinuousAxisCam(ContinuousAcquisitionTrigger, AxisCamBase):
 
         # Return a Status that is done when all leaf-node plugins are complete
         statuses = [SubscriptionStatus(plugin.array_counter, self._plugin_complete, run=False) for plugin in self._leaf_plugins]
-        print(f"Trigger {self._num_triggered}")
         return reduce(lambda a, b: a & b, statuses)
 
     def unstage(self):
