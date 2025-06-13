@@ -686,19 +686,6 @@ class ContinuousAxisCam(ContinuousAcquisitionTrigger, AxisCamBase):
         if self.cam.acquire.get() == 0:
             # Manually start acquiring
             self.cam.acquire.set(1).wait(3.0)
-            status = None
-        else:
-            # This means that the detector was already acquiring when we staged
-            # and the camera could have been exposing already.
-            # We must wait until this first frame is complete before we can
-            # start exposing a new frame.
-            current_frame_number = self.cam.num_images_counter.get()
-
-            # Wait for the first frame to be flushed
-            def frame_changed(value, old_value, **kwargs):
-                return value > current_frame_number
-
-            status = SubscriptionStatus(self.cam.num_images_counter, frame_changed)
 
         # Set up subscriptions for all leaf-node plugins
         # We need to wait for all leaf-node plugins downstream of the circular buffer to finish writing
@@ -709,25 +696,41 @@ class ContinuousAxisCam(ContinuousAcquisitionTrigger, AxisCamBase):
         reachable_nodes = nx.descendants(graph, self.cb.port_name.get())
         self._leaf_plugins: list[PluginBase] = [port_map[node] for node in reachable_nodes if graph.out_degree(node) == 0 and isinstance(port_map[node], PluginBase)]
 
-        if status is not None:
-            status.wait(timeout=self.cam.acquire_period.get() + 1e-5)
+        # Reset array counters to 0 so we can properly wait
+        for plugin in self._leaf_plugins:
+            plugin.array_counter.set(0).wait()
 
+        print("Done staging.")
         return res
+
+    def _wait_for_frame(self):
+        current_frame_number = self.cam.num_images_counter.get()
+        def frame_changed(value, old_value, **kwargs):
+            return value > current_frame_number
+        SubscriptionStatus(self.cam.num_images_counter, frame_changed).wait(timeout=self.cam.acquire_period.get() + 1e-5)
+
+    def _plugin_complete(self, old_value, value, **kwargs) -> bool:
+        print(f"{value=}/{self.cb.post_count.get() * self._num_triggered}")
+        return value == self.cb.post_count.get() * self._num_triggered
 
     def trigger(self):
         """
         Since we are non-blocking at the EPICS level, we want to wait for the HDF5
         plugin to finish writing before we trigger the next acquisition.
         """
+        # We must wait until this first frame is complete before we can
+        # start exposing a new frame. Otherwise, we may grab a frame
+        # that was exposing during a movement (of a motor or energy or temperature value)
+        self._wait_for_frame()
+
+        # Trigger the circular buffer with the fully exposed frame
         self._num_triggered += 1
         super().trigger()
 
         # Return a Status that is done when all leaf-node plugins are complete
-        statuses = [SubscriptionStatus(plugin.array_counter, self._plugin_complete) for plugin in self._leaf_plugins]
+        statuses = [SubscriptionStatus(plugin.array_counter, self._plugin_complete, run=False) for plugin in self._leaf_plugins]
+        print(f"Trigger {self._num_triggered}")
         return reduce(lambda a, b: a & b, statuses)
-
-    def _plugin_complete(self, old_value, value, **kwargs) -> bool:
-        return value == self.cb.post_count.get() * self._num_triggered
 
     def unstage(self):
         super().unstage()
