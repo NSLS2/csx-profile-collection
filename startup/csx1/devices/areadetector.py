@@ -1,12 +1,13 @@
 import logging
 from typing import Union, Optional
+from functools import reduce
 
 import networkx as nx
 from ophyd import (EpicsScaler, EpicsSignal, EpicsSignalRO, Device, BlueskyInterface,
                    SingleTrigger, HDF5Plugin, ImagePlugin, StatsPlugin,
                    ROIPlugin, TransformPlugin, OverlayPlugin, ProsilicaDetector, TIFFPlugin, Signal, Staged, CamBase)
 
-from ophyd.areadetector.cam import AreaDetectorCam
+from ophyd.areadetector.cam import AreaDetectorCam, ADBase
 from ophyd.areadetector.detectors import DetectorBase
 from ophyd.areadetector.filestore_mixins import FileStoreHDF5IterativeWrite, FileStoreTIFFIterativeWrite, resource_factory
 from ophyd.areadetector import ADComponent, EpicsSignalWithRBV
@@ -14,6 +15,7 @@ from ophyd.areadetector.plugins import PluginBase, ProcessPlugin, HDF5Plugin_V22
 from ophyd import Component as Cpt, DeviceStatus
 from ophyd.device import FormattedComponent as FCpt
 from ophyd import AreaDetector
+from ophyd.status import Status, SubscriptionStatus
 from pathlib import PurePath
 import time as ttime
 import itertools
@@ -643,6 +645,8 @@ class ContinuousAxisCam(ContinuousAcquisitionTrigger, AxisCamBase):
               -> PROC2 -> TRANS2 -> OVER1 -> PVA1
     """
     cb = Cpt(CircularBuffPlugin_V34, "CB1:")
+    # This is for regulating exposure during possible movements
+    should_skip_frame = Cpt(Signal, kind="config", value=True)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -679,36 +683,57 @@ class ContinuousAxisCam(ContinuousAcquisitionTrigger, AxisCamBase):
 
         res = super().stage()
 
-        self.hdf5.num_captured.subscribe(self._hdf5_num_captured_changed)
         self._num_triggered = 0
 
-        # Manually start acquiring
         if self.cam.acquire.get() == 0:
+            # Manually start acquiring
             self.cam.acquire.set(1).wait(3.0)
 
+        # Set up subscriptions for all leaf-node plugins
+        # We need to wait for all leaf-node plugins downstream of the circular buffer to finish writing
+        # before we can trigger the next acquisition.
+        asyn_graph: tuple[nx.DiGraph, dict[str, ADBase]] = self.get_asyn_digraph()
+        graph = asyn_graph[0]
+        port_map = asyn_graph[1]
+        reachable_nodes = nx.descendants(graph, self.cb.port_name.get())
+        self._leaf_plugins: list[PluginBase] = [port_map[node] for node in reachable_nodes if graph.out_degree(node) == 0 and isinstance(port_map[node], PluginBase)]
+
+        # Reset array counters to 0 so we can properly wait
+        for plugin in self._leaf_plugins:
+            plugin.array_counter.set(0).wait()
+
         return res
+
+    def _skip_frame(self):
+        current_frame_number = self.cam.num_images_counter.get()
+        def frame_changed(value, old_value, **kwargs):
+            return value > current_frame_number
+        SubscriptionStatus(self.cam.num_images_counter, frame_changed).wait(timeout=self.cam.acquire_period.get() + 1e-5)
+
+    def _plugin_complete(self, old_value, value, **kwargs) -> bool:
+        return value == self.cb.post_count.get() * self._num_triggered
 
     def trigger(self):
         """
         Since we are non-blocking at the EPICS level, we want to wait for the HDF5
         plugin to finish writing before we trigger the next acquisition.
         """
+        if self.should_skip_frame.get():
+            # We must wait until this first frame is complete before we can
+            # start exposing a new frame. Otherwise, we may grab a frame
+            # that was exposing during a movement (of a motor or energy or temperature value)
+            self._skip_frame()
+
+        # Trigger the circular buffer with the fully exposed frame
         self._num_triggered += 1
         super().trigger()
-        self._write_status = TriggerStatus(self.hdf5.num_captured, self.cb.post_count.get() * self._num_triggered, self)
-        return self._write_status
 
-    def _hdf5_num_captured_changed(self, old_value, value, **kwargs):
-        if self._write_status is None:
-            return
-        if value == self._write_status.target:
-            self._write_status.set_finished()
-            self._write_status = None
+        # Return a Status that is done when all leaf-node plugins are complete
+        statuses = [SubscriptionStatus(plugin.array_counter, self._plugin_complete) for plugin in self._leaf_plugins]
+        return reduce(lambda a, b: a & b, statuses)
 
     def unstage(self):
         super().unstage()
-
-        self.hdf5.num_captured.unsubscribe(self._hdf5_num_captured_changed)
         self._num_triggered = 0
 
 class FCCDCam(AreaDetectorCam):
