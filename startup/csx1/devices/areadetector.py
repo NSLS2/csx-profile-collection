@@ -686,6 +686,7 @@ class ContinuousAxisCam(ContinuousAcquisitionTrigger, AxisCamBase):
         if self.cam.acquire.get() == 0:
             # Manually start acquiring
             self.cam.acquire.set(1).wait(3.0)
+            status = None
         else:
             # This means that the detector was already acquiring when we staged
             # and the camera could have been exposing already.
@@ -708,7 +709,9 @@ class ContinuousAxisCam(ContinuousAcquisitionTrigger, AxisCamBase):
         reachable_nodes = nx.descendants(graph, self.cb.port_name.get())
         self._leaf_plugins: list[PluginBase] = [port_map[node] for node in reachable_nodes if graph.out_degree(node) == 0 and isinstance(port_map[node], PluginBase)]
 
-        status.wait(timeout=self.cam.acquire_period.get() + 1e-5)
+        if status is not None:
+            status.wait(timeout=self.cam.acquire_period.get() + 1e-5)
+
         return res
 
     def trigger(self):
