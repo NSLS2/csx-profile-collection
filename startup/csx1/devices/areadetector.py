@@ -645,6 +645,7 @@ class ContinuousAxisCam(ContinuousAcquisitionTrigger, AxisCamBase):
               -> PROC2 -> TRANS2 -> OVER1 -> PVA1
     """
     cb = Cpt(CircularBuffPlugin_V34, "CB1:")
+    should_skip_frame = Cpt(Signal, kind="config", value=False)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -703,7 +704,7 @@ class ContinuousAxisCam(ContinuousAcquisitionTrigger, AxisCamBase):
         print("Done staging.")
         return res
 
-    def _wait_for_frame(self):
+    def _skip_frame(self):
         current_frame_number = self.cam.num_images_counter.get()
         def frame_changed(value, old_value, **kwargs):
             return value > current_frame_number
@@ -718,10 +719,12 @@ class ContinuousAxisCam(ContinuousAcquisitionTrigger, AxisCamBase):
         Since we are non-blocking at the EPICS level, we want to wait for the HDF5
         plugin to finish writing before we trigger the next acquisition.
         """
-        # We must wait until this first frame is complete before we can
-        # start exposing a new frame. Otherwise, we may grab a frame
-        # that was exposing during a movement (of a motor or energy or temperature value)
-        self._wait_for_frame()
+        if self.should_skip_frame.get():
+            # We must wait until this first frame is complete before we can
+            # start exposing a new frame. Otherwise, we may grab a frame
+            # that was exposing during a movement (of a motor or energy or temperature value)
+            print("skipping frame")
+            self._skip_frame()
 
         # Trigger the circular buffer with the fully exposed frame
         self._num_triggered += 1
