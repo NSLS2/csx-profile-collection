@@ -729,7 +729,7 @@ class ContinuousAxisCam(ContinuousAcquisitionTrigger, AxisCamBase):
         super().trigger()
 
         # Return a Status that is done when all leaf-node plugins are complete
-        statuses = [SubscriptionStatus(plugin.array_counter, self._plugin_complete, run=False) for plugin in self._leaf_plugins]
+        statuses = [SubscriptionStatus(plugin.array_counter, self._plugin_complete) for plugin in self._leaf_plugins]
         return reduce(lambda a, b: a & b, statuses)
 
     def unstage(self):
