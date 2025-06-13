@@ -14,6 +14,7 @@ from ophyd.areadetector.plugins import PluginBase, ProcessPlugin, HDF5Plugin_V22
 from ophyd import Component as Cpt, DeviceStatus
 from ophyd.device import FormattedComponent as FCpt
 from ophyd import AreaDetector
+from ophyd.status import Status
 from pathlib import PurePath
 import time as ttime
 import itertools
@@ -682,9 +683,25 @@ class ContinuousAxisCam(ContinuousAcquisitionTrigger, AxisCamBase):
         self.hdf5.num_captured.subscribe(self._hdf5_num_captured_changed)
         self._num_triggered = 0
 
-        # Manually start acquiring
         if self.cam.acquire.get() == 0:
+            # Manually start acquiring
             self.cam.acquire.set(1).wait(3.0)
+        else:
+            # This means that the detector was already acquiring when we staged
+            # and the camera could have been exposing already.
+            # We must wait until this first frame is complete before we can
+            # start exposing a new frame.
+            current_frame_number = self.cam.num_images_counter.get()
+
+            # Wait for the first frame to be flushed
+            status = Status()
+            def frame_changed(value, old_value, **kwargs):
+                if value > current_frame_number:
+                    status.set_finished()
+                    self.cam.num_images_counter.clear_sub(frame_changed)
+            
+            self.cam.num_images_counter.subscribe(frame_changed, run=False)
+            status.wait(timeout=self.cam.acquire_period.get() + 0.1)
 
         return res
 
