@@ -38,6 +38,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Run Integration Tests Against Beamline Profiles
         uses: NSLS2/gha-beamline-integration-test@2025-1.0-test
