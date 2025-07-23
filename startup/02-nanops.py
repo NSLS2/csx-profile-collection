@@ -8,6 +8,8 @@ from ophyd.utils.epics_pvs import raise_if_disconnected
 
 
 class NanoMotor(EpicsMotor):
+    tolerance = Cpt(Signal, value=0, kind="config")
+
     if type(EpicsMotor._default_configuration_attrs) in [list]:
         epics_config_attrs = EpicsMotor._default_configuration_attrs
     else:
@@ -26,6 +28,26 @@ class NanoMotor(EpicsMotor):
     icof = Cpt(EpicsSignal, '.ICOF')
     stat = Cpt(EpicsSignal, '.STAT') #alarm status
     oplp = Cpt(EpicsSignal, '.STOP') #USING .STOP to open control loop.  normal .STOP should not do this
+
+    def move(self, position, wait=True, **kwargs):
+        status = super().move(position, wait=False, **kwargs)
+        setpoint = position
+        tolerance = self.tolerance.get()
+
+        def check_within_tolerance(value, timestamp, **kwargs):
+            if abs(value - setpoint) < tolerance:
+                status.set_finished()
+                self.clear_sub(check_within_tolerance, event_type=self.SUB_READBACK)
+        
+        self.subscribe(check_within_tolerance, event_type=self.SUB_READBACK)
+        try:
+            if wait:
+                status_wait(status)
+        except KeyboardInterrupt:
+            self.stop()
+            raise
+
+        return status
 
 
 class NanoMotorOpenLoop(EpicsMotor): #TODO unverified for v3 asmbly epics
