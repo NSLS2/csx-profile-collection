@@ -20,7 +20,7 @@ sd.baseline = [theta, delta, gamma, muR,
                m1a, 
                m3a,
                #nanop, tardis,
-               tardis,
+               tardis, axis_standard.cam.temperature,
                stemp, pgm,
                inout, es_diag1_y, diag6_pid,]# diag6.stats1.centroid_threshold ] ###TODOrecord_threshold_for_every_scan_and_PV_put_complete OR probably should link to diag6_pid as RO
 

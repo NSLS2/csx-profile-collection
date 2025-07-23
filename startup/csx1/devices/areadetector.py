@@ -246,12 +246,15 @@ class AxisDetectorCam(AreaDetectorCam):
     Custom AxisDetectorCam class to include a `wait_for_plugins` signal.
     """
     _default_configuration_attrs = AreaDetectorCam._default_configuration_attrs + (
-        "gain",
+        "gain", 'prnu',
         "tec",
         "bin_mode",
+        # there are functions to add attrs for image corrections when testing (see .startup.detectors)
+        # we should add more functionality to enable/disable triggering. if enabled, add atts
     )
     wait_for_plugins = Cpt(EpicsSignal, "WaitForPlugins", string=True, kind="hinted")
     gain = Cpt(EpicsSignalWithRBV, "GainMode", string=True, kind="config")
+    prnu = Cpt(EpicsSignalWithRBV, "PRNU", string=True, kind="config")
     tec = Cpt(EpicsSignalWithRBV, "TEC", string=True, kind="config")
     auto_tec = Cpt(EpicsSignalWithRBV, "AutoTEC", string=True, kind="config")
     bin_mode = Cpt(EpicsSignalWithRBV, "BinMode", string=True, kind="config")
