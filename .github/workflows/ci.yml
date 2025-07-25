@@ -24,14 +24,14 @@ jobs:
             branch: ""
             beamline-acronym: "csx"
         zenodo:
-          - url: "https://zenodo.org/records/15171538/files/2025-2.0-py310-tiled.tar.gz"
-            md5: "bf2ecadce50394b4f44767fd53f76eb6"
+          - url: "https://zenodo.org/records/15636681/files/2025-2.2-py310-tiled.tar.gz"
+            md5: "3c9a3cb2fe30692c3cf71d92c03a359d"
             python: "3.10"
-          - url: "https://zenodo.org/records/15171538/files/2025-2.0-py311-tiled.tar.gz"
-            md5: "3d705483eab31648fae7cf0ce9a77e72"
+          - url: "https://zenodo.org/records/15636681/files/2025-2.2-py311-tiled.tar.gz"
+            md5: "346e39f6269f04cde26108c7eab3f989"
             python: "3.11"
-          - url: "https://zenodo.org/records/15171538/files/2025-2.0-py312-tiled.tar.gz"
-            md5: "23f5634eda0e3207504c3529c2ade1cc"
+          - url: "https://zenodo.org/records/15636681/files/2025-2.2-py312-tiled.tar.gz"
+            md5: "345b8e9eff936378a780c82214e7171d"
             python: "3.12"
 
     runs-on: ubuntu-latest
