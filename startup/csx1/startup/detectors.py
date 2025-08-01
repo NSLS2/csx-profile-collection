@@ -86,6 +86,21 @@ axis_cont = ContinuousAxisCam("XF:23ID1-ES{AXIS}", name='axis_cont')
 _setup_stats(axis_cont)
 ### more roi metadata at the end
 
+def axis_add_image_correction_to_config_attr(axis_detector_in_use, remove = False):
+    config_list = ['enhance', 'defect_correction', 'enable_denoise', 'flat_correction', 'dyn_rge_correction', 'frame_format', 'brightness', 'black_level','sharpness', 'noise_level', 'hdr_k', 'gamma', 'contrast', 'left_levels', 'right_levels']
+    cam_config_list = ['cam.'+item for item in  config_list]
+    if cam_config_list[0] in axis_detector_in_use.configuration_attrs:
+        if remove:
+            print('removing from configuration attrs')
+            print('restart bluesky for now. remove and pop dont seem to work')
+            #for item in cam_config_list:
+            #    axis_detector_in_use.configuration_attrs.remove(item)
+        else:
+            print('probablly all are in configuration attrs')
+    else:
+        print('adding to configuration attrs')
+        axis_detector_in_use.configuration_attrs.extend(cam_config_list)
+
 # Setup on 2018/03/16 for correlating fCCD and sample position - worked 
 # DON'T NEED STATS to take pictures of sample/optics
 #dif_cam1 = StandardCam('XF:23ID1-ES{Dif-Cam:1}', name='dif_cam1' )
