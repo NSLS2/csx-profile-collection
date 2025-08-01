@@ -1,5 +1,5 @@
 from ophyd import EpicsSignalRO
-from ..devices.epu import EPU
+from ..devices.epu import EPU, BPM
 
 #
 # Ring Current for machine
@@ -16,4 +16,10 @@ epu1 = EPU('XF:23ID-ID{EPU:1', epu_prefix='SR:C23-ID:G1A{EPU:1',
 epu2 = EPU('XF:23ID-ID{EPU:2', epu_prefix='SR:C23-ID:G1A{EPU:2',
            ai_prefix='SR:C31-{AI}23-2', name='epu2', labels=['source'])
 
+
+#
+# Beam Position Monitor
+#
+
+bpm = BPM('XF:23ID-ID{BPM}Val:', name = 'bpm')
 
