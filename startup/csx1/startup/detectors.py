@@ -29,7 +29,7 @@ def _setup_stats(cam_in):
         getattr(cam_in, k).read_attrs = ['total']
         getattr(cam_in, k).total.kind = 'hinted'
 
-def add_cam_rois(cam):
+def _add_cam_rois(cam):
     for k in (f'stats{j}' for j in range(1, 6)):
         cam.read_attrs.append(k)
         getattr(cam, k).read_attrs = ['total']
@@ -40,7 +40,7 @@ def add_cam_rois(cam):
 
     configuration_attrs_list = [] 
 
-    configuration_attrs_list.extend(['roi' + str(i) + string for i in range(1,5) for string in roi_params])
+    configuration_attrs_list.extend(['roi' + str(i) + roi_param for i in range(1,5) for roi_param in roi_params])
     for attr in configuration_attrs_list:
         getattr(cam, attr).kind='config'
 
@@ -71,8 +71,8 @@ mcs = StruckSIS3820MCS('XF:23ID1-ES{Sclr:1}', name='mcs')
 # Diagnostic Prosilica Cameras
 #
 ## 20201219 - Machine studies for source characterization #TODO save also images like real detector
-cam_fs = StandardCam('XF:23IDA-BI:1{FS:1-Cam:1}', name='cam_fs') 
-cam_fs1_hdf5 = add_cam_rois(StandardProsilicaWithHDF5('XF:23IDA-BI:1{FS:1-Cam:1}', name = 'cam_fs1_hdf5'))
+cam_fs = _add_cam_rois(StandardCam('XF:23IDA-BI:1{FS:1-Cam:1}', name='cam_fs'))
+cam_fs1_hdf5 = _add_cam_rois(StandardProsilicaWithHDF5('XF:23IDA-BI:1{FS:1-Cam:1}', name = 'cam_fs1_hdf5'))
 
 cam_diag2 = StandardCam('XF:23ID1-BI{Diag:2-Cam:1}', name='cam_diag2')#TODOpmab optional imagesave w/ stats always
 _setup_stats(cam_diag2) #diamond diagnostic
