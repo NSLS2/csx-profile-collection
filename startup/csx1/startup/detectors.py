@@ -51,6 +51,7 @@ mcs = StruckSIS3820MCS('XF:23ID1-ES{Sclr:1}', name='mcs')
 #
 # Diagnostic Prosilica Cameras
 #
+cam_fs1_hdf5 = StandardProsilicaWithHDF5('XF:23IDA-BI:1{FS:1-Cam:1}', name = 'cam_fs1_hdf5')
 
 cam_diag2 = StandardCam('XF:23ID1-BI{Diag:2-Cam:1}', name='cam_diag2')#TODOpmab optional imagesave w/ stats always
 _setup_stats(cam_diag2) #diamond diagnostic
