@@ -51,6 +51,8 @@ mcs = StruckSIS3820MCS('XF:23ID1-ES{Sclr:1}', name='mcs')
 #
 # Diagnostic Prosilica Cameras
 #
+## 20201219 - Machine studies for source characterization #TODO save also images like real detector
+cam_fs = StandardCam('XF:23IDA-BI:1{FS:1-Cam:1}', name='cam_fs') 
 cam_fs1_hdf5 = StandardProsilicaWithHDF5('XF:23IDA-BI:1{FS:1-Cam:1}', name = 'cam_fs1_hdf5')
 
 cam_diag2 = StandardCam('XF:23ID1-BI{Diag:2-Cam:1}', name='cam_diag2')#TODOpmab optional imagesave w/ stats always
@@ -109,9 +111,6 @@ def axis_add_image_correction_to_config_attr(axis_detector_in_use, remove = Fals
 cam_dif_micro = StandardProsilicaWithTIFF('XF:23ID1-ES{Dif-Cam:1}', name='cam_dif_micro')
 cam_dif_top = StandardProsilicaWithTIFF('XF:23ID1-ES{Dif-Cam:2}', name='cam_dif_top')
 cam_dif_side = StandardProsilicaWithTIFF('XF:23ID1-ES{Dif-Cam:3}', name='cam_dif_side')##TODO think how to fix with trans plugin
-
-## 20201219 - Machine studies for source characterization #TODO save also images like real detector
-cam_fs = StandardCam('XF:23IDA-BI:1{FS:1-Cam:1}', name='cam_fs') #TODOpmab optional imagesave w/ stats always
 
 
 #cam_pa= StandardCam('XF:23ID1-BI{Diag:7-Cam:1}', name='cam_pa') #TODOpmab optional imagesave w/ stats always
