@@ -29,6 +29,25 @@ def _setup_stats(cam_in):
         getattr(cam_in, k).read_attrs = ['total']
         getattr(cam_in, k).total.kind = 'hinted'
 
+def _add_cam_rois(cam):
+    for k in (f'stats{j}' for j in range(1, 6)):
+        cam.read_attrs.append(k)
+        getattr(cam, k).read_attrs = ['total']
+        getattr(cam, k).total.kind = 'hinted'
+
+    roi_params = ['.min_xyz', '.min_xyz.min_y', '.min_xyz.min_x',
+                '.size', '.size.y', '.size.x', '.name_']
+
+    configuration_attrs_list = [] 
+
+    configuration_attrs_list.extend(['roi' + str(i) + roi_param for i in range(1,5) for roi_param in roi_params])
+    for attr in configuration_attrs_list:
+        getattr(cam, attr).kind='config'
+
+    cam.configuration_attrs.extend(['roi1', 'roi2', 'roi3','roi4'])
+
+    return cam
+
 
 
 # #TODO delete, it is already in diag6
@@ -51,6 +70,9 @@ mcs = StruckSIS3820MCS('XF:23ID1-ES{Sclr:1}', name='mcs')
 #
 # Diagnostic Prosilica Cameras
 #
+## 20201219 - Machine studies for source characterization #TODO save also images like real detector
+cam_fs = _add_cam_rois(StandardCam('XF:23IDA-BI:1{FS:1-Cam:1}', name='cam_fs'))
+cam_fs1_hdf5 = _add_cam_rois(StandardProsilicaWithHDF5('XF:23IDA-BI:1{FS:1-Cam:1}', name = 'cam_fs1_hdf5'))
 
 cam_diag2 = StandardCam('XF:23ID1-BI{Diag:2-Cam:1}', name='cam_diag2')#TODOpmab optional imagesave w/ stats always
 _setup_stats(cam_diag2) #diamond diagnostic
@@ -108,9 +130,6 @@ def axis_add_image_correction_to_config_attr(axis_detector_in_use, remove = Fals
 cam_dif_micro = StandardProsilicaWithTIFF('XF:23ID1-ES{Dif-Cam:1}', name='cam_dif_micro')
 cam_dif_top = StandardProsilicaWithTIFF('XF:23ID1-ES{Dif-Cam:2}', name='cam_dif_top')
 cam_dif_side = StandardProsilicaWithTIFF('XF:23ID1-ES{Dif-Cam:3}', name='cam_dif_side')##TODO think how to fix with trans plugin
-
-## 20201219 - Machine studies for source characterization #TODO save also images like real detector
-cam_fs = StandardCam('XF:23IDA-BI:1{FS:1-Cam:1}', name='cam_fs') #TODOpmab optional imagesave w/ stats always
 
 
 #cam_pa= StandardCam('XF:23ID1-BI{Diag:7-Cam:1}', name='cam_pa') #TODOpmab optional imagesave w/ stats always
