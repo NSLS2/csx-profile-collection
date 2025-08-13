@@ -3,11 +3,14 @@ from ophyd import (EpicsMotor, PVPositioner, PVPositionerPC,
 from ophyd import Component as Cpt
 from ophyd import FormattedComponent as FmtCpt
 
+
 from ..devices.optics import (FMBHexapodMirror, SlitsGapCenter,
-                                    SlitsXY)
+                                    SlitsXY, FSDiag)
 from ..devices.eps import EPSTwoStateDevice
 
 from ..devices.optics import (PGM, M3AMirror, PID)
+
+from ..devices.motor_lookup import make_device_with_lookup_table
 
 # M1A, M1B1, M1B2
 
@@ -34,6 +37,8 @@ diag2_y = EpicsMotor('XF:23ID1-BI{Diag:2-Ax:Y}Mtr', name='diag2_y', labels=['opt
 diag3_y = EpicsMotor('XF:23ID1-BI{Diag:3-Ax:Y}Mtr', name='diag3_y', labels=['optics'])
 diag5_y = EpicsMotor('XF:23ID1-BI{Diag:5-Ax:Y}Mtr', name='diag5_y', labels=['optics'])
 diag6_y = EpicsMotor('XF:23ID1-BI{Diag:6-Ax:Y}Mtr', name='diag6_y', labels=['optics'])
+
+fs_diag1_x = make_device_with_lookup_table(FSDiag, lut_suffix='Ax:X', num_rows=10, precision=2)('XF:23IDA-BI:1{FS:1', name = 'fs_diag1_x')
 
 # Setpoint for PID loop
 
