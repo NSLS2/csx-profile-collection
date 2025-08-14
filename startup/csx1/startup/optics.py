@@ -5,7 +5,7 @@ from ophyd import FormattedComponent as FmtCpt
 
 
 from ..devices.optics import (FMBHexapodMirror, SlitsGapCenter,
-                                    SlitsXY, FSDiag)
+                                    SlitsXY, FSDiag, FrontEndSlit)
 from ..devices.eps import EPSTwoStateDevice
 
 from ..devices.optics import (PGM, M3AMirror, PID)
@@ -30,6 +30,9 @@ m3a = M3AMirror('XF:23ID1-OP{Mir:3',  name='m3a', labels=['optics'])
 slt1 = SlitsGapCenter('XF:23ID1-OP{Slt:1', name='slt1', labels=['optics'])
 slt2 = SlitsGapCenter('XF:23ID1-OP{Slt:2', name='slt2', labels=['optics'])
 slt3 = SlitsXY('XF:23ID1-OP{Slt:3', name='slt3', labels=['optics'])
+
+fe_slt = FrontEndSlit('FE:C23A-OP{Slt:12', name = 'FEslt', labels=['optics'])
+
 
 # Diagnostic Manipulators
 
@@ -63,5 +66,11 @@ dif_diode = EPSTwoStateDevice('XF:23ID1-ES{Dif-Abs}', name='dif_diode',
                               nm_str1='In', nm_str2='Out')
 
 
+# Front End Shutter
 
+fe_shutter = EPSTwoStateDevice('XF:23ID1-PPS{Sh:FE}}',
+                               state1='Not Closed', state2='Closed',
+                               cmd_str1='Opn', cmd_str2='Cls',
+                               nm_str1='Opn', nm_str2='Cls',
+                               name='FE_shutter')
 
