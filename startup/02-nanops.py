@@ -141,6 +141,7 @@ except ValueError:
     pass
 
 nanop = NanoBundle('XF:23ID1-ES{Dif:Nano-Ax:', name='nanop', labels=['motor, optics, nanops'])
+pa_mot_th = NanoMotorWithGentleStop("XF:23ID1-ES{PA-Ax:Th}Mtr", name="pa_mot_th")
 #nanop.bz.remove_bad_signals()  # solve the issue with disconnection errors #TODO is this needed for v3 asmbly epics
 
 

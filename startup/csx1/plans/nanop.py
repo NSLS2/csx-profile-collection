@@ -1,7 +1,40 @@
+from typing import Optional, Any
+from collections.abc import Sequence, Mapping
+
 import numpy as np
 from cycler import cycler
 import bluesky.plans as bp
 import bluesky.plan_stubs as bps
+from bluesky.protocols import Readable, Movable
+from bluesky.plan_stubs import TakeReading, trigger_and_read, move_per_step
+from bluesky.utils import MsgGenerator
+
+
+def one_nd_step_with_retries(
+    detectors: Sequence[Readable],
+    step: Mapping[Movable, Any],
+    pos_cache: Mapping[Movable, Any],
+    take_reading: Optional[TakeReading] = None,
+) -> MsgGenerator[None]:
+    take_reading = trigger_and_read if take_reading is None else take_reading
+    motors = step.keys()
+    try:
+        yield from move_per_step(step, pos_cache)
+    except Exception as e:
+        print("Retrying move...")
+        yield from move_per_step(step, pos_cache)
+    yield from take_reading(list(detectors) + list(motors))
+
+
+def scan_with_retry(scan_plan, *args, **kwargs):
+    yield from scan_plan(*args, per_step=one_nd_step_with_retries, **kwargs)
+
+
+def test_scans_with_retry(num_scans: int, motor):
+    for i in range(num_scans):
+        print(f"Running iteration {i}")
+        yield from scan_with_retry(bp.scan, [], motor, 42.9, 45.9, 30)
+        print(f"Iteration {i} complete")
 
 
 def spiral_continuous(detectors,
