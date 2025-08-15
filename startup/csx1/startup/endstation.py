@@ -7,6 +7,8 @@ import bluesky.plan_stubs as bps
 from ..devices.optics import (SamplePosVirtualMotor, Cryoangle,
                              Nanopositioner)
 
+from ..devices.motor_lookup import make_epics_motor_with_lookup_table
+
 from ..devices.lakeshore import Lakeshore336
 from ..devices.eps import EPSTwoStateDevice
 from .tardis import tardis
@@ -55,7 +57,7 @@ def kill_tardis():
 
 # Diagnostic Axis
 
-es_diag1_y = EpicsMotor('XF:23ID1-ES{Diag:1-Ax:Y}Mtr', name='es_diag1_y', labels=['motors'])
+es_diag1_y = make_epics_motor_with_lookup_table("-Ax:Y}Mtr", motor_name="y", lut_suffix="Ax:Y", num_rows=10)("XF:23ID1-ES{Diag:1", name="es_diag1_y")
 eta = EpicsMotor('XF:23ID1-ES{Diag:1-Ax:Eta}Mtr', name='eta')
 
 # Lakeshore 336 Temp Controller

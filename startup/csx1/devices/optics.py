@@ -125,8 +125,6 @@ class SlitsXY(Device):
     x = Cpt(EpicsMotor, '-Ax:X}Mtr', name='x')
     y = Cpt(EpicsMotor, '-Ax:Y}Mtr', name='y')
 
-class FSDiag(Device):
-    x = Cpt(EpicsMotor,'-Ax:X}Mtr', name='x', labels=['motors'])
 
 
 # Front End Slits 
