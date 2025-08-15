@@ -47,3 +47,19 @@ class EPU(Device):
         self._ai_prefix = ai_prefix
         self._epu_prefix = epu_prefix
         super().__init__(*args, **kwargs)
+
+class BPM_signal(Device):
+    setpoint = Cpt(EpicsSignalRO, '-SP')
+    deviation = Cpt(EpicsSignalRO, 'S-I')
+
+class BPMAxis(Device):
+    pos = FmCpt(BPM_signal, '{prefix}Pos{self.axis}')
+    angle = FmCpt(BPM_signal, '{prefix}Angle{self.axis}')
+
+    def __init__(self, *args, axis : str, **kwargs):
+        self.axis = axis
+        super().__init__(*args, **kwargs)
+
+class BPM(Device):
+    x = Cpt(BPMAxis, '', axis = 'X')
+    y = Cpt(BPMAxis, '', axis = 'Y')

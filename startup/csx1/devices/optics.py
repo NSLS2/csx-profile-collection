@@ -124,3 +124,27 @@ class SlitsGapCenter(Device):
 class SlitsXY(Device):
     x = Cpt(EpicsMotor, '-Ax:X}Mtr', name='x')
     y = Cpt(EpicsMotor, '-Ax:Y}Mtr', name='y')
+
+
+
+# Front End Slits 
+
+class acc_slit(PVPositionerPC):
+    setpoint = Cpt(EpicsSignal, 'size.VAL')
+    readback = Cpt(EpicsSignalRO, 't2.C')
+
+class acc_slit_cent(PVPositionerPC):
+    setpoint = Cpt(EpicsSignal, 'center.VAL')
+    readback = Cpt(EpicsSignalRO, 't2.D')
+
+class FEAxis(Device):
+    gap = FmtCpt(acc_slit, '{prefix}-Ax:{self.axis}}}')
+    cent = FmtCpt(acc_slit_cent, '{prefix}-Ax:{self.axis}}}')
+
+    def __init__(self, *args, axis : str, **kwargs):
+        self.axis = axis
+        super().__init__(*args, **kwargs)
+
+class FrontEndSlit(Device):
+    x = Cpt(FEAxis, '', axis = 'X')
+    y = Cpt(FEAxis, '', axis = 'Y')

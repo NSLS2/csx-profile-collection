@@ -3,11 +3,14 @@ from ophyd import (EpicsMotor, PVPositioner, PVPositionerPC,
 from ophyd import Component as Cpt
 from ophyd import FormattedComponent as FmtCpt
 
+
 from ..devices.optics import (FMBHexapodMirror, SlitsGapCenter,
-                                    SlitsXY)
+                                    SlitsXY, FrontEndSlit)
 from ..devices.eps import EPSTwoStateDevice
 
 from ..devices.optics import (PGM, M3AMirror, PID)
+
+from ..devices.motor_lookup import make_epics_motor_with_lookup_table
 
 # M1A, M1B1, M1B2
 
@@ -24,16 +27,22 @@ m3a = M3AMirror('XF:23ID1-OP{Mir:3',  name='m3a', labels=['optics'])
 
 # Slits
 
+fe_slt = FrontEndSlit('FE:C23A-OP{Slt:12', name = 'FEslt', labels=['optics'])
+
 slt1 = SlitsGapCenter('XF:23ID1-OP{Slt:1', name='slt1', labels=['optics'])
 slt2 = SlitsGapCenter('XF:23ID1-OP{Slt:2', name='slt2', labels=['optics'])
 slt3 = SlitsXY('XF:23ID1-OP{Slt:3', name='slt3', labels=['optics'])
 
+
+
 # Diagnostic Manipulators
 
+fs_diag1_x = make_epics_motor_with_lookup_table('-Ax:X}Mtr', motor_name='y', lut_suffix='Ax:X', num_rows=10)('XF:23IDA-BI:1{FS:1', name='fs_diag1_x')
 diag2_y = EpicsMotor('XF:23ID1-BI{Diag:2-Ax:Y}Mtr', name='diag2_y', labels=['optics'])
 diag3_y = EpicsMotor('XF:23ID1-BI{Diag:3-Ax:Y}Mtr', name='diag3_y', labels=['optics'])
 diag5_y = EpicsMotor('XF:23ID1-BI{Diag:5-Ax:Y}Mtr', name='diag5_y', labels=['optics'])
 diag6_y = EpicsMotor('XF:23ID1-BI{Diag:6-Ax:Y}Mtr', name='diag6_y', labels=['optics'])
+
 
 # Setpoint for PID loop
 
@@ -58,5 +67,11 @@ dif_diode = EPSTwoStateDevice('XF:23ID1-ES{Dif-Abs}', name='dif_diode',
                               nm_str1='In', nm_str2='Out')
 
 
+# Photon Shutters
 
+ps_front_end = EPSTwoStateDevice('XF:23ID1-PPS{Sh:FE}}',
+                               state1='Not Closed', state2='Closed',
+                               cmd_str1='Opn', cmd_str2='Cls',
+                               nm_str1='Opn', nm_str2='Cls',
+                               name='FE_shutter')
 

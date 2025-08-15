@@ -59,7 +59,7 @@ class EPSTwoStateDevice(Device):
 
         cmd_enums = cmd_sig.enum_strs
         count = 0
-        MAX_RETRIES = 5
+        MAX_RETRIES = 10
         WAIT_FOR_RETRY = 0.5  # seconds
         def cmd_retry_cb(value, timestamp, **kwargs):
             nonlocal count
