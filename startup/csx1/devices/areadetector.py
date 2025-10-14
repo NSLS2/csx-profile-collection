@@ -569,12 +569,6 @@ class AxisCamBase(AreaDetector):
         set_plugin_graph(self.default_plugin_graph)
 
     def stage(self):
-        # Ensure we continue acquiring in case of failure
-        self.ensure_acquiring = (
-            self.cam.image_mode.get(as_string=True) == "Continuous" and
-            self.cam.acquire.get() == 1
-        )
-
         # Adjust timeout relative to acquire_time and acquire_period
         exposure_time = self.cam.acquire_time.get()
         acquire_period = self.cam.acquire_period.get()
@@ -595,6 +589,25 @@ class AxisCamBase(AreaDetector):
         # Adjust timeout back to original value
         self.cam.acquire._timeout -= self.additional_timeout
 
+    def ensure_nonblocking(self):
+        self.stage_sigs["cam.wait_for_plugins"] = "No"
+        for c in self.component_names:
+            cpt = getattr(self, c)
+            if cpt is self:
+                continue
+            if hasattr(cpt, "ensure_nonblocking"):
+                cpt.ensure_nonblocking()
+
+    def store_acquiring_state(self):
+        """Store acquiring state if we are in continuous mode"""
+        self.ensure_acquiring = (
+            self.cam.image_mode.get(as_string=True) == "Continuous" and
+            self.cam.acquire.get() == 1
+        )
+
+
+    def restore_acquiring_state(self):
+        """Restore acquiring state if we were before"""
         # If the image mode was continuous, start acquiring again
         acquiring = self.cam.acquire.get()
         if self.ensure_acquiring and acquiring == 0:
@@ -605,15 +618,6 @@ class AxisCamBase(AreaDetector):
               and self.cam.image_mode.get(as_string=True) == "Continuous"
               and acquiring == 1):
             self.cam.acquire.set(0).wait(3.0)
-
-    def ensure_nonblocking(self):
-        self.stage_sigs["cam.wait_for_plugins"] = "No"
-        for c in self.component_names:
-            cpt = getattr(self, c)
-            if cpt is self:
-                continue
-            if hasattr(cpt, "ensure_nonblocking"):
-                cpt.ensure_nonblocking()
 
 
 class StandardAxisCam(SingleTrigger, AxisCamBase):
@@ -636,6 +640,7 @@ class StandardAxisCam(SingleTrigger, AxisCamBase):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.stage_sigs[self.cam.wait_for_plugins] = "No"
+        self.stage_sigs[self.cam.trigger_mode] = "Software"
         # Changing image_mode stops acquisition every time
         # so using stage_sigs doesn't work
         self.stage_sigs.pop("cam.acquire")
@@ -661,13 +666,33 @@ class StandardAxisCam(SingleTrigger, AxisCamBase):
         }
 
     def stage(self):
-        ret = super().stage()
+        self.store_acquiring_state()
 
         # Manually stop acquiring
         if self.cam.acquire.get() == 1:
             self.cam.acquire.set(0).wait(3.0)
 
+        # If not in software trigger mode and we are capturing, stop capturing so we can switch it
+        if self.cam.trigger_mode.get(as_string=True) != "Software" and self.cam.capture.get() == 1:
+            self.cam.capture.set(0).wait(3.0)
+
+        # Process stage_sigs (includes trigger_mode switch to software)
+        ret = super().stage()
+
+        # If not capturing, start capturing to warm up the detector
+        if self.cam.capture.get() == 0:
+            self.cam.capture.set(1).wait(3.0)
+
         return ret
+
+    def unstage(self):
+        # Stop capturing if still
+        if self.cam.capture.get() == 1:
+            self.cam.capture.set(0).wait(3.0)
+
+        # Reset stage_sigs to original values
+        super().unstage()
+        self.restore_acquiring_state()
 
 
 class ContinuousAxisCam(ContinuousAcquisitionTrigger, AxisCamBase):
@@ -696,6 +721,7 @@ class ContinuousAxisCam(ContinuousAcquisitionTrigger, AxisCamBase):
         super().__init__(*args, **kwargs)
         # Changing the image_mode stops acquisition already
         # so we can't use stage_sigs
+        self.stage_sigs[self.cam.trigger_mode] = "Free Run"
         self.stage_sigs.pop("cam.acquire")
         self.ensure_nonblocking()
 
@@ -723,14 +749,24 @@ class ContinuousAxisCam(ContinuousAcquisitionTrigger, AxisCamBase):
         }
 
     def stage(self):
+        self.store_acquiring_state()
         self.stage_sigs[self.cb.post_count] = self.cam.num_images.get()
 
+        # If not in free run mode and we are capturing, check if we are acquiring and stop it if so,
+        # then stop capturing. We need to do this to switch the trigger mode to free run.
+        if self.cam.trigger_mode.get(as_string=True) != "Free Run" and self.cam.capture.get() == 1:
+            if self.cam.acquire.get() == 1:
+                self.cam.acquire.set(0).wait(3.0)
+            self.cam.capture.set(0).wait(3.0)
+            self._trigger_mode_swtiched = True
+
+        # Process stage_sigs (includes trigger_mode switch to free run)
         res = super().stage()
 
         self._num_triggered = 0
 
+        # Manually start acquiring
         if self.cam.acquire.get() == 0:
-            # Manually start acquiring
             self.cam.acquire.set(1).wait(3.0)
 
         # Set up subscriptions for all leaf-node plugins
@@ -777,8 +813,18 @@ class ContinuousAxisCam(ContinuousAcquisitionTrigger, AxisCamBase):
         return reduce(lambda a, b: a & b, statuses)
 
     def unstage(self):
+        # If the trigger mode was switched during stage, we need to stop
+        # acquiring and capturing to change it back.
+        if self._trigger_mode_switched:
+            if self.cam.acquire.get() == 1:
+                self.cam.acquire.set(0).wait(3.0)
+            if self.cam.capture.get() == 1:
+                self.cam.capture.set(0).wait(3.0)
+
         super().unstage()
         self._num_triggered = 0
+        self.restore_acquiring_state()
+
 
 class FCCDCam(AreaDetectorCam):
     sdk_version = Cpt(EpicsSignalRO, 'SDKVersion_RBV')
