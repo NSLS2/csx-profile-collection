@@ -253,6 +253,7 @@ class AxisDetectorCam(AreaDetectorCam):
         # we should add more functionality to enable/disable triggering. if enabled, add atts
     )
     wait_for_plugins = Cpt(EpicsSignal, "WaitForPlugins", string=True, kind="hinted")
+    capture = Cpt(EpicsSignalWithRBV, "Capture", kind="omitted")
     gain = Cpt(EpicsSignalWithRBV, "GainMode", string=True, kind="config")
     prnu = Cpt(EpicsSignalWithRBV, "PRNU", string=True, kind="config")
     tec = Cpt(EpicsSignalWithRBV, "TEC", string=True, kind="config")
@@ -727,6 +728,7 @@ class ContinuousAxisCam(ContinuousAcquisitionTrigger, AxisCamBase):
 
         self._write_status: TriggerStatus | None = None
         self._num_triggered = 0
+        self._trigger_mode_switched = False
 
         self._default_plugin_graph = {
             self.cb: self.cam,
