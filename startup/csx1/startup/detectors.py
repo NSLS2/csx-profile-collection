@@ -210,3 +210,11 @@ axis_standard.configuration_attrs.extend(['roi1', 'roi2', 'roi3','roi4'])
 for attr in configuration_attrs_list:
     getattr(axis_cont, attr).kind='config'
 axis_cont.configuration_attrs.extend(['roi1', 'roi2', 'roi3','roi4'])
+
+for attr in configuration_attrs_list:
+    getattr(axis2_standard, attr).kind='config'
+axis2_standard.configuration_attrs.extend(['roi1', 'roi2', 'roi3','roi4'])
+
+for attr in configuration_attrs_list:
+    getattr(axis2_cont, attr).kind='config'
+axis2_cont.configuration_attrs.extend(['roi1', 'roi2', 'roi3','roi4'])
