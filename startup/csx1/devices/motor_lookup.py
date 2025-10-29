@@ -1,3 +1,4 @@
+import pdb
 import ophyd
 from ophyd import EpicsMotor, sim, Device, Kind
 from ophyd import Component as Cpt, FormattedComponent as FCpt, DynamicDeviceComponent
@@ -150,11 +151,11 @@ def make_device_with_lookup_table(base : Device, lut_suffix: str, num_rows: int,
     col_names = []
     col_suffixes = []
     for key in base.__dict__['component_names']:
-        signal = base.__dict__[key]
-        if (base.__dict__[key] == EpicsMotor):
-            motor_components[key] = base.__dict__[key]
+        component = base.__dict__[key]
+        if issubclass(component.cls, EpicsMotor):
+            motor_components[key] = component
             col_names.append(key)
-            col_suffixes.append(signal.suffix)
+            col_suffixes.append(component.suffix)
 
     
     pos_lookup = OrderedDict(pos_lookup = get_lookup(lut_suffix=lut_suffix, num_rows=num_rows, col_suffixes=col_suffixes, col_names = col_names))
