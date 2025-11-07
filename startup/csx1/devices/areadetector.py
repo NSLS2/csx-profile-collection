@@ -752,7 +752,8 @@ class ContinuousAxisCam(ContinuousAcquisitionTrigger, AxisCamBase):
         current_frame_number = self.cam.num_images_counter.get()
         def frame_changed(value, old_value, **kwargs):
             return value > current_frame_number
-        SubscriptionStatus(self.cam.num_images_counter, frame_changed).wait(timeout=self.cam.acquire_period.get() + 1e-5)
+        # Wait until one full frame finishes, timeout indicates that something is wrong
+        SubscriptionStatus(self.cam.num_images_counter, frame_changed).wait(timeout=self.cam.acquire_period.get() * 2 - 1e-4)
 
     def _plugin_complete(self, old_value, value, **kwargs) -> bool:
         return value == self.cb.post_count.get() * self._num_triggered
