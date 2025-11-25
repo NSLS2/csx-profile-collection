@@ -73,7 +73,7 @@ def mock_nslsii():
 
 @pytest.fixture
 def startup_dir():
-    profile_dir = Path(__file__).parent.parent.parent
+    profile_dir = Path(__file__).parent.parent
     startup_dir = profile_dir / "startup"
     sys.path.insert(0, str(startup_dir))
     yield startup_dir
@@ -91,8 +91,29 @@ def test_startup(startup_dir):
             result = shell.run_cell(code, store_history=True, silent=True)
             result.raise_error()
         
-        assert "RE" in shell.user_ns
-        assert "db" in shell.user_ns
+        ns = shell.user_ns
+        
+        # Bluesky core
+        assert "RE" in ns, "RunEngine not found"
+        assert "db" in ns, "Databroker not found"
+        assert "bec" in ns, "BestEffortCallback not found"
+        
+        # Optics
+        assert "pgm" in ns, "PGM monochromator not found"
+        assert "m1a" in ns, "M1A mirror not found"
+        assert "m3a" in ns, "M3A mirror not found"
+        
+        # EPUs
+        assert "epu1" in ns, "EPU1 not found"
+        assert "epu2" in ns, "EPU2 not found"
+        
+        # Detectors
+        assert "sclr" in ns, "Scaler not found"
+        assert "axis_standard" in ns, "Axis standard not found"
+        assert "axis_cont" in ns, "Axis continuous not found"
+        
+        # Nanopositioning
+        assert "nanop" in ns, "Nanop not found"
+        
     finally:
         InteractiveShell.clear_instance()
-    
