@@ -8,33 +8,34 @@ on:
       - main
   pull_request:
   workflow_dispatch:
-  workflow_call:
-    inputs:
-      version: # the variable you can use in place of a matrix
-        required: true
-        type: string
+  #workflow_call:
+  #  inputs:
+  #    version: # the variable you can use in place of a matrix
+  #      required: true
+  #      type: string
 
 jobs:
   testing_beamline_profiles:
-    name: ${{ matrix.repos.beamline-acronym }}-py${{ matrix.zenodo.python }}
-    strategy:
-      fail-fast: false
-      matrix:
-        repos:
-          - org: "NSLS2"
-            repo: "csx-profile-collection"
-            branch: ""
-            beamline-acronym: "csx"
-        zenodo:
-          - url: "https://zenodo.org/records/15636681/files/2025-2.2-py310-tiled.tar.gz"
-            md5: "3c9a3cb2fe30692c3cf71d92c03a359d"
-            python: "3.10"
-          - url: "https://zenodo.org/records/15636681/files/2025-2.2-py311-tiled.tar.gz"
-            md5: "346e39f6269f04cde26108c7eab3f989"
-            python: "3.11"
-          - url: "https://zenodo.org/records/15636681/files/2025-2.2-py312-tiled.tar.gz"
-            md5: "345b8e9eff936378a780c82214e7171d"
-            python: "3.12"
+    name: Test profile
+#    name: ${{ matrix.repos.beamline-acronym }}-py${{ matrix.zenodo.python }}
+#    strategy:
+#      fail-fast: false
+#      matrix:
+#        repos:
+#          - org: "NSLS2"
+#            repo: "csx-profile-collection"
+#            branch: ""
+#            beamline-acronym: "csx"
+#        zenodo:
+#          - url: "https://zenodo.org/records/15636681/files/2025-2.2-py310-tiled.tar.gz"
+#            md5: "3c9a3cb2fe30692c3cf71d92c03a359d"
+#            python: "3.10"
+#          - url: "https://zenodo.org/records/15636681/files/2025-2.2-py311-tiled.tar.gz"
+#            md5: "346e39f6269f04cde26108c7eab3f989"
+#            python: "3.11"
+#          - url: "https://zenodo.org/records/15636681/files/2025-2.2-py312-tiled.tar.gz"
+#            md5: "345b8e9eff936378a780c82214e7171d"
+#            python: "3.12"
 
     runs-on: ubuntu-latest
     steps:
@@ -43,12 +44,22 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Run Integration Tests Against Beamline Profiles
-        uses: NSLS2/gha-beamline-integration-test@2025-1.0-test
+      - name: Setup Pixi
+        uses: prefix-dev/setup-pixi@82d477f15f3a381dbcc8adc1206ce643fe110fb7  # v0.9.3
         with:
-          conda_env_url: "${{ matrix.zenodo.url }}"
-          conda_env_md5: "${{ matrix.zenodo.md5 }}"
-          org: "${{ matrix.repos.org }}"
-          repo: "${{ matrix.repos.repo }}"
-          branch: "${{ matrix.repos.branch }}"
-          beamline-acronym: "${{ matrix.repos.beamline-acronym }}"
+          pixi-version: v0.59.0
+          cache: false
+          environments: test
+
+      - name: Run pytest
+        run: pixi run test
+
+      #- name: Run Integration Tests Against Beamline Profiles
+      #  uses: NSLS2/gha-beamline-integration-test@2025-1.0-test
+      #  with:
+      #    conda_env_url: "${{ matrix.zenodo.url }}"
+      #    conda_env_md5: "${{ matrix.zenodo.md5 }}"
+      #    org: "${{ matrix.repos.org }}"
+      #    repo: "${{ matrix.repos.repo }}"
+      #    branch: "${{ matrix.repos.branch }}"
+      #    beamline-acronym: "${{ matrix.repos.beamline-acronym }}"

@@ -1,6 +1,0 @@
-networks:
-  channel_access:
-    ipam:
-      driver: default
-      config:
-        - subnet: "${CA_SUBNET}"
