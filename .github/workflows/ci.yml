@@ -49,6 +49,7 @@ jobs:
         with:
           pixi-version: v0.59.0
           cache: false
+          environment: test
 
       - name: Run pytest
         run: pixi run test
