@@ -66,12 +66,8 @@ pvs = "ipython --profile-dir=. -c 'get_pv_types(); exit()'"
 pytest = "*"
 
 
-[feature.test.pypi-dependencies]
-pytest-asyncio = "*"
-
-
 [feature.test.tasks]
-integration-tests = "pytest tests/integration"
+test = "pytest tests"
 
 
 [environments]
