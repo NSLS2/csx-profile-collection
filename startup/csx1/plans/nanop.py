@@ -11,6 +11,26 @@ from bluesky.plan_stubs import TakeReading, trigger_and_read, move_per_step
 from bluesky.utils import MsgGenerator
 
 
+def mv_with_retry(*args, num_retries: int = 3) -> MsgGenerator[None]:
+    """
+    Move a motor with retries.
+
+    Parameters
+    ----------
+    *args : Any
+        Arguments to pass to the `bps.mv` plan stub.
+    num_retries : int, optional
+        The number of retries to attempt. Defaults to 3.
+    """
+    for i in range(num_retries):
+        try:
+            yield from bps.mv(*args)
+        except Exception as e:
+            print(f"Error moving with arguments {args}: {e}. Retrying {i + 1} of {num_retries}.")
+            if i == num_retries - 1:
+                raise e
+
+
 def one_nd_step_with_retries(
     detectors: Sequence[Readable],
     step: Mapping[Movable, Any],
@@ -25,12 +45,28 @@ def one_nd_step_with_retries(
             yield from move_per_step(step, pos_cache)
         except Exception as e:
             print(f"Error moving per step: {e}. Retrying {i + 1} of {num_retries}.")
+            if i == num_retries - 1:
+                raise e
     yield from take_reading(list(detectors) + list(motors))
 
 
-def scan_with_retry(scan_plan, *args, num_retries: int = 3, **kwargs):
+def scan_with_retry(scan_plan, *args, num_retries: int = 3, **kwargs) -> MsgGenerator[Any]:
+    """
+    Scan with retries.
+
+    Parameters
+    ----------
+    scan_plan : callable
+        The Bluesky scan plan to run. It must have a `per_step` keyword argument.
+    *args : Any
+        Additional arguments to pass to the scan plan.
+    num_retries : int, optional
+        The number of retries to attempt for each step of the scan. Defaults to 3.
+    **kwargs : Any
+        Additional keyword arguments to pass to the scan plan.
+    """
     per_step = functools.partial(one_nd_step_with_retries, num_retries=num_retries)
-    yield from scan_plan(*args, per_step=per_step, **kwargs)
+    return (yield from scan_plan(*args, per_step=per_step, **kwargs))
 
 
 def spiral_continuous(detectors,
