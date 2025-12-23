@@ -60,13 +60,12 @@ pvs = "ipython --profile-dir=. -c 'get_pv_types(); exit()'"
 
 [feature.test.dependencies]
 pytest = "*"
-
+ipython = ">=9.5.0"
 
 [feature.test.tasks]
-test = "pytest tests"
-
+tests = "pytest tests"
 
 [environments]
-test = {features=["profile", "terminal", "test"], solve-group="profile"}
+test = {features=["profile", "test"], solve-group="profile"}
 terminal = {features=["profile", "terminal"], solve-group="profile"}
 qs = {features=["profile", "qs"], solve-group="profile"}
