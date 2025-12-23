@@ -144,3 +144,6 @@ target/
 dump.rdb
 
 **/auto-generated/
+# pixi environments
+.pixi/*
+!.pixi/config.toml

@@ -1,5 +1,5 @@
 from ..startup.detectors import fccd
-from collections import Iterable
+from collections.abc import Iterable
 import itertools
 import time
 import bluesky.preprocessors as bpp
