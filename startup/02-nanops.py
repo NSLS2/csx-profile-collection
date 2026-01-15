@@ -143,6 +143,14 @@ except ValueError:
 nanop = NanoBundle('XF:23ID1-ES{Dif:Nano-Ax:', name='nanop', labels=['motor, optics, nanops'])
 #nanop.bz.remove_bad_signals()  # solve the issue with disconnection errors #TODO is this needed for v3 asmbly epics
 
+class PABundle(MotorBundle):
+    eta = Cpt(EpicsMotor, "Eta}Mtr")
+    trans = Cpt(NanoMotorWithGentleStop, "Trans}Mtr")
+    theta = Cpt(NanoMotorWithGentleStop, "Th}Mtr")
+
+
+pa_mot = PABundle("XF:23ID1-ES{PA-Ax:", name="pa_mot", labels=["pa, motor, nanops"])
+
 
 class MotorPairX(Device):
     tx = Cpt(NanoMotorWithGentleStop, nanop.tx.prefix)
