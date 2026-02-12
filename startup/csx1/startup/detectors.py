@@ -84,6 +84,10 @@ axis_standard = StandardAxisCam("XF:23ID1-ES{AXIS}", name='axis_standard')
 _setup_stats(axis_standard)
 axis_cont = ContinuousAxisCam("XF:23ID1-ES{AXIS}", name='axis_cont')
 _setup_stats(axis_cont)
+axis2_standard = StandardAxisCam("XF:23ID1-ES{AXIS2}", name='axis2_standard')
+_setup_stats(axis2_standard)
+axis2_cont = ContinuousAxisCam("XF:23ID1-ES{AXIS2}", name='axis2_cont')
+_setup_stats(axis2_cont)
 ### more roi metadata at the end
 
 def axis_add_image_correction_to_config_attr(axis_detector_in_use, remove = False):
@@ -187,3 +191,11 @@ axis_standard.configuration_attrs.extend(['roi1', 'roi2', 'roi3','roi4'])
 for attr in configuration_attrs_list:
     getattr(axis_cont, attr).kind='config'
 axis_cont.configuration_attrs.extend(['roi1', 'roi2', 'roi3','roi4'])
+
+for attr in configuration_attrs_list:
+    getattr(axis2_standard, attr).kind='config'
+axis2_standard.configuration_attrs.extend(['roi1', 'roi2', 'roi3','roi4'])
+
+for attr in configuration_attrs_list:
+    getattr(axis2_cont, attr).kind='config'
+axis2_cont.configuration_attrs.extend(['roi1', 'roi2', 'roi3','roi4'])
