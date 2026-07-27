@@ -420,7 +420,7 @@ class StandardProsilicaWithHDF5(StandardCam):
     hdf5 = Cpt(HDF5PluginWithFileStorePlain,
               suffix='HDF1:',
               write_path_template='',
-              root='')
+              )
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -467,7 +467,7 @@ class StandardProsilicaWithTIFF(StandardCam): #RIPPED OFF FROM CHX and not using
     tiff = Cpt(TIFFPluginWithFileStore,
                suffix='TIFF1:',              
                write_path_template='',
-               root='')
+               )
     def __init__(self, *args, **kwargs): #TODOandi-understand why must be self, #TODOclaudio should we do this for stats?
         super().__init__(*args, **kwargs)
         self.tiff.kind = "normal"
@@ -544,7 +544,6 @@ class AxisCamBase(AreaDetector):
     hdf5 = Cpt(HDF5PluginWithFileStorePlain,
               suffix='HDF1:',
               read_path_template='',
-              root='',
               write_path_template='',
               path_semantics='posix')
     pva1 = Cpt(PvaPluginWithPluginAttributes, 'Pva1:')
@@ -872,7 +871,6 @@ class ProductionCamStandard(SingleTrigger, ProductionCamBase):
     hdf5 = Cpt(HDF5PluginWithFileStore,
                suffix='HDF1:',
                write_path_template='',
-               root='',
                reg=None)  # placeholder to be set on instance as obj.hdf5.reg
 
     def stage(self):
