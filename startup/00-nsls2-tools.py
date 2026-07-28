@@ -110,7 +110,7 @@ tw = TiledWriter(
                  "resource": patch_resource},
         spec_to_mimetype={
             "AD_HDF5": "application/x-hdf5",
-            "AD_HDF5_DET_TS": "application/x-hdf5"
+            "AD_HDF5_DET_TS": "application/x-hdf5",
             "AD_TIFF": "multipart/related;type=image/tiff",
         })
 tiled_reading_client_raw = from_profile("nsls2")["csx"]["raw"]
@@ -120,7 +120,7 @@ ip = get_ipython()
 nslsii.configure_base(
     ip.user_ns,
     'csx',
-    publish_documents_with_kafka=False,
+    publish_documents_with_kafka=True,
     bec=False,
     redis_url="xf23id1-csx-redis1.nsls2.bnl.gov",
     redis_port=6380,
