@@ -13,6 +13,73 @@ import time as ttime
 from csx1.analysis.callbacks import BECwithTicks
 from tiled.client import from_profile
 from bluesky_tiled_plugins import TiledWriter
+import numpy
+
+
+def patch_descriptor(doc):
+    # This was labeled "integer" but it is actually "string".
+    INOUT_KEY = "inout_status"
+    if INOUT_KEY in doc["data_keys"]:
+        doc["data_keys"][INOUT_KEY]["dtype"] = "string"
+    # If this is turned on, we get errors about the number of bytes sent.
+    # This probably debuggable in pure Tiled -- something about <i2.
+    if "fccd_image" in doc["data_keys"]:
+        doc["data_keys"]["fccd_image"]["dtype_str"] = "<i2"
+    tardis_keys = [
+        "tardis_h",
+        "tardis_h_setpoint",
+        "tardis_k",
+        "tardis_k_setpoint",
+        "tardis_l",
+        "tardis_l_setpoint",
+        "tardis_theta",
+        "tardis_theta_user_setpoint",
+        "tardis_mu",
+        "tardis_chi",
+        "tardis_phi",
+        "tardis_delta",
+        "tardis_delta_user_setpoint",
+        "tardis_gamma",
+        "tardis_gamma_user_setpoint",
+    ]
+    for key in tardis_keys:
+        if key in doc["data_keys"]:
+            doc["data_keys"][key]["dtype_str"] = "<f8"
+    if "slt3_x_user_setpoint" in doc["data_keys"]:
+        doc["data_keys"]["slt3_x_user_setpoint"]["dtype_str"] = "<f8"
+    for i in range(1, 33):
+        if f"fccd_mcs_wfrm_wfrm_{i}" in doc["data_keys"]:
+            doc["data_keys"][f"fccd_mcs_wfrm_wfrm_{i}"]["dtype_str"] = "<i8"
+    if "es_diag1_y_user_setpoint" in doc["data_keys"]:
+        doc["data_keys"]["es_diag1_y_user_setpoint"]["dtype_str"] = "<f8"
+
+    # Ensure dtype_str has the proper numpy format (to pass the EventModel validator)
+    for key, val in doc["data_keys"].items():
+        if "dtype_str" in val:
+            val["dtype_str"] = numpy.dtype(val["dtype_str"]).str
+
+    return doc
+
+
+def patch_resource(doc):
+
+    kwargs = doc.get("resource_kwargs", {})
+
+    # Fix the resource path
+    root = doc.get("root", "")
+    if not doc["resource_path"].startswith(root):
+        doc["resource_path"] = os.path.join(root, doc["resource_path"])
+    doc["root"] = ""
+
+    if doc.get("spec") in ["AD_HDF5"]:
+        kwargs.update({"dataset": 'entry/instrument/detector/data'})
+    elif doc.get("spec") in ["AD_TIFF"]:
+        kwargs["template"] = "/" + kwargs["template"].lstrip("/")    # Ensure leading slash
+        kwargs["join_method"] = "stack"
+    elif doc.get("spec") in ["AD_HDF5_DET_TS"]:
+        kwargs.update({"dataset": '/entry/instrument/NDAttributes/NDArrayTimeStamp'})
+
+    return doc
 
 class TiledInserter:
     def insert(self, name, doc):
@@ -39,8 +106,11 @@ tiled_inserter = TiledInserter()
 tw = TiledWriter(
         tiled_writing_client_sql,
         backup_directory="/tmp/tiled_backup",
+        patches={"descriptor": patch_descriptor,
+                 "resource": patch_resource},
         spec_to_mimetype={
             "AD_HDF5": "application/x-hdf5",
+            "AD_HDF5_DET_TS": "application/x-hdf5"
             "AD_TIFF": "multipart/related;type=image/tiff",
         })
 tiled_reading_client_raw = from_profile("nsls2")["csx"]["raw"]
