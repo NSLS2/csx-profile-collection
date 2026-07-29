@@ -80,26 +80,6 @@ cam_slt3 = StandardCam('XF:23ID1-ES{Dif-Cam:Beam}', name='cam_slt3')
 _setup_stats(cam_slt3)
 #_setup_stats_cen(cam_slt3_hdf5)
 
-axis_standard = StandardAxisCam("XF:23ID1-ES{AXIS}", name='axis_standard')
-_setup_stats(axis_standard)
-axis_cont = ContinuousAxisCam("XF:23ID1-ES{AXIS}", name='axis_cont')
-_setup_stats(axis_cont)
-### more roi metadata at the end
-
-def axis_add_image_correction_to_config_attr(axis_detector_in_use, remove = False):
-    config_list = ['enhance', 'defect_correction', 'enable_denoise', 'flat_correction', 'dyn_rge_correction', 'frame_format', 'brightness', 'black_level','sharpness', 'noise_level', 'hdr_k', 'gamma', 'contrast', 'left_levels', 'right_levels']
-    cam_config_list = ['cam.'+item for item in  config_list]
-    if cam_config_list[0] in axis_detector_in_use.configuration_attrs:
-        if remove:
-            print('removing from configuration attrs')
-            print('restart bluesky for now. remove and pop dont seem to work')
-            #for item in cam_config_list:
-            #    axis_detector_in_use.configuration_attrs.remove(item)
-        else:
-            print('probablly all are in configuration attrs')
-    else:
-        print('adding to configuration attrs')
-        axis_detector_in_use.configuration_attrs.extend(cam_config_list)
 
 # Setup on 2018/03/16 for correlating fCCD and sample position - worked 
 # DON'T NEED STATS to take pictures of sample/optics
@@ -125,57 +105,39 @@ cam_fs = StandardCam('XF:23IDA-BI:1{FS:1-Cam:1}', name='cam_fs') #TODOpmab optio
 #_setup_stats(cam_bs_hdf5)
 
 
-# FastCCD
 
-fccd = StageOnFirstTrigger('XF:23ID1-ES{FCCD}',
-#fccd = ProductionCamTriggered('XF:23ID1-ES{FCCD}',
-                              dg1_prefix='XF:23ID1-ES{Dly:1',
-                              dg2_prefix='XF:23ID1-ES{Dly:2',
-                              mcs_prefix='XF:23ID1-ES{Sclr:1}',
-                              name='fccd')
-fccd.read_attrs = ['hdf5','mcs.wfrm']
-fccd.hdf5.read_attrs = []
-#fccd.hdf5._reg = db.reg
-configuration_attrs_list = ['cam.acquire_time',
-                            'cam.acquire_period',
-                            'cam.image_mode',
-                            'cam.num_images',
-                            'cam.sdk_version',
-                            'cam.firmware_version',
-                            'cam.overscan_cols',
-                            'cam.fcric_gain',
-                            'cam.fcric_clamp',
-                            'dg1', 'dg2',
-                            'dg2.A', 'dg2.B',
-                            'dg2.C', 'dg2.D',
-                            'dg2.E', 'dg2.F',
-                            'dg2.G', 'dg2.H',
-                            'dg1.A', 'dg1.B',
-                            'dg1.C', 'dg1.D',
-                            'dg1.E', 'dg1.F',
-                            'dg1.G', 'dg1.H',
-                            'fccd1.enable_bgnd',
-                            'fccd1.enable_gain',
-                            'fccd1.enable_size',
-                            'fccd1.rows',
-                            'fccd1.row_offset',
-                            'fccd1.overscan_cols',
-                            ]
+### AXIS CMOS -- in since 2025
 
+axis_standard = StandardAxisCam("XF:23ID1-ES{AXIS}", name='axis_standard')
+_setup_stats(axis_standard)
+axis_cont = ContinuousAxisCam("XF:23ID1-ES{AXIS}", name='axis_cont')
+_setup_stats(axis_cont)
+### more roi metadata at the end
+
+def axis_add_image_correction_to_config_attr(axis_detector_in_use, remove = False):
+    config_list = ['enhance', 'defect_correction', 'enable_denoise', 'flat_correction', 'dyn_rge_correction', 'frame_format', 'brightness', 'black_level','sharpness', 'noise_level', 'hdr_k', 'gamma', 'contrast', 'left_levels', 'right_levels']
+    cam_config_list = ['cam.'+item for item in  config_list]
+    if cam_config_list[0] in axis_detector_in_use.configuration_attrs:
+        if remove:
+            print('removing from configuration attrs')
+            print('restart bluesky for now. remove and pop dont seem to work')
+            #for item in cam_config_list:
+            #    axis_detector_in_use.configuration_attrs.remove(item)
+        else:
+            print('probablly all are in configuration attrs')
+    else:
+        print('adding to configuration attrs')
+        axis_detector_in_use.configuration_attrs.extend(cam_config_list)
+
+
+## ROIs setting for all defined detectors
 
 roi_params = ['.min_xyz', '.min_xyz.min_y', '.min_xyz.min_x',
-              '.size', '.size.y', '.size.x', '.name_']
-configuration_attrs_list.extend(['roi' + str(i) + string for i in range(1,5) for string in roi_params])
-
-##TODO make roi config attrs into generic function like _setup_stats so all areadetectors can have roi coordinates
-for attr in configuration_attrs_list:
-    getattr(fccd, attr).kind='config'
-fccd.configuration_attrs.extend(['roi1', 'roi2', 'roi3','roi4'])
-_setup_stats(fccd)
-
+               '.size', '.size.y', '.size.x', '.name_']
 
 configuration_attrs_list = []                        
 configuration_attrs_list.extend(['roi' + str(i) + string for i in range(1,5) for string in roi_params])
+
 for attr in configuration_attrs_list:
     getattr(cam_dif_hdf5, attr).kind='config'
 cam_dif_hdf5.configuration_attrs.extend(['roi1', 'roi2', 'roi3','roi4'])
@@ -187,3 +149,56 @@ axis_standard.configuration_attrs.extend(['roi1', 'roi2', 'roi3','roi4'])
 for attr in configuration_attrs_list:
     getattr(axis_cont, attr).kind='config'
 axis_cont.configuration_attrs.extend(['roi1', 'roi2', 'roi3','roi4'])
+
+
+
+
+# FastCCD - removed during 2025..
+
+#fccd = StageOnFirstTrigger('XF:23ID1-ES{FCCD}',
+#fccd = ProductionCamTriggered('XF:23ID1-ES{FCCD}',
+#                              dg1_prefix='XF:23ID1-ES{Dly:1',
+#                              dg2_prefix='XF:23ID1-ES{Dly:2',
+#                              mcs_prefix='XF:23ID1-ES{Sclr:1}',
+#                              name='fccd')
+#fccd.read_attrs = ['hdf5','mcs.wfrm']
+#fccd.hdf5.read_attrs = []
+#fccd.hdf5._reg = db.reg
+#configuration_attrs_list = ['cam.acquire_time',
+                            # 'cam.acquire_period',
+                            # 'cam.image_mode',
+                            # 'cam.num_images',
+                            # 'cam.sdk_version',
+                            # 'cam.firmware_version',
+                            # 'cam.overscan_cols',
+                            # 'cam.fcric_gain',
+                            # 'cam.fcric_clamp',
+                            # 'dg1', 'dg2',
+                            # 'dg2.A', 'dg2.B',
+                            # 'dg2.C', 'dg2.D',
+                            # 'dg2.E', 'dg2.F',
+                            # 'dg2.G', 'dg2.H',
+                            # 'dg1.A', 'dg1.B',
+                            # 'dg1.C', 'dg1.D',
+                            # 'dg1.E', 'dg1.F',
+                            # 'dg1.G', 'dg1.H',
+                            # 'fccd1.enable_bgnd',
+                            # 'fccd1.enable_gain',
+                            # 'fccd1.enable_size',
+                            # 'fccd1.rows',
+                            # 'fccd1.row_offset',
+                            # 'fccd1.overscan_cols',
+                            # ]
+#
+#
+# roi_params = ['.min_xyz', '.min_xyz.min_y', '.min_xyz.min_x',
+#               '.size', '.size.y', '.size.x', '.name_']
+# configuration_attrs_list.extend(['roi' + str(i) + string for i in range(1,5) for string in roi_params])
+#
+# ##TODO make roi config attrs into generic function like _setup_stats so all areadetectors can have roi coordinates
+# for attr in configuration_attrs_list:
+#     getattr(fccd, attr).kind='config'
+# fccd.configuration_attrs.extend(['roi1', 'roi2', 'roi3','roi4'])
+# _setup_stats(fccd)
+#
+
