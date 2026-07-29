@@ -19,7 +19,8 @@ from ..devices.areadetector import (StandardCam, NoStatsCam,
                                     StageOnFirstTrigger,
                                     MonitorStatsCam,
                                     StandardProsilicaWithHDF5, StandardProsilicaWithTIFF, #TODOpmab - added to try to save (inspired from SIX)
-                                    StandardAxisCam, ContinuousAxisCam, set_plugin_graph)
+                                    StandardAxisCam, ContinuousAxisCam, set_plugin_graph,
+                                    CamDiag6, CamDif)
 
 from ..startup import db
 
@@ -67,11 +68,11 @@ cam_diag6 = MonitorStatsCam('XF:23ID1-BI{Diag:6-Cam:1}', name='cam_diag6') #TODO
 #cam_diag6 = NoStatsCam('XF:23ID1-BI{Diag:6-Cam:1}', name='diag6') #TODO revert above test
 #cam_diag6.stats1.centroid_threshold.kind = :normal' ## maybe can only subscribe diag6? ##TODOrecord_threshold_for_every_scan_and_PV_put_complete
 #cam_diag6.stats1.kind = 'normal'
-cam_diag6_hdf5 = StandardProsilicaWithHDF5('XF:23ID1-BI{Diag:6-Cam:1}', name='cam_diag6_hdf5') #TODO replace with DSSI project
+cam_diag6_hdf5 = CamDiag6('XF:23ID1-BI{Diag:6-Cam:1}', name='cam_diag6_hdf5') #TODO replace with DSSI project
 #_setup_stats_cen(cam_diag6_hdf5)
 ## 20180726 needed to comment due to IOC1 problems - probably ok now, but not used.
 cam_dif = StandardCam('XF:23ID1-ES{Diag:5-Cam:1}', name='cam_dif')
-cam_dif_hdf5 = StandardProsilicaWithHDF5('XF:23ID1-ES{Diag:5-Cam:1}', name='cam_dif_hdf5')
+cam_dif_hdf5 = CamDif('XF:23ID1-ES{Diag:5-Cam:1}', name='cam_dif_hdf5')
 _setup_stats(cam_dif)
 #_setup_stats_cen(cam_dif_hdf5)
 

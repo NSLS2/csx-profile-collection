@@ -422,15 +422,30 @@ class StandardProsilicaWithHDF5(StandardCam):
               write_path_template='',
               )
 
+    def subscribe(self, *args, **kwargs):
+        #TODO centroid.x was orignally cenx, neither work in substribing. - figure out later.
+        return self.stats1.centroid.x.subscribe(*args, **kwargs) #TODO if this works, then add stats1.ceny too.
+        # return self.stast1.centroid.y.subscribe(*args, **kwargs) #TODO if this works, then add stats1.ceny too.
+
+    def unsubuscribe(self, *args, **kwargs):
+        return self.stats1.centroid.x.unsubscribe(*args, **kwargs)
+        # return self.stats1.centroid.y.unsubscribe(*args, **kwargs)
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.hdf5.kind = "normal"
 
     def stage(self, *args, **kwargs):
-        self.hdf5.write_path_template = asset_path() + f"{self.name}/%Y/%m/%d"
-        self.hdf5.read_path_template = asset_path() + f"{self.name}/%Y/%m/%d"
-        self.hdf5.root = asset_path() + f"{self.name}"
+        self.hdf5.write_path_template = asset_path() + f"{self.directory_name}/%Y/%m/%d"
+        self.hdf5.read_path_template = asset_path() + f"{self.directory_name}/%Y/%m/%d"
+        self.hdf5.reg_root = asset_path() + f"{self.directory_name}"
         return super().stage(*args, **kwargs)
+
+class CamDiag6(StandardProsilicaWithHDF5):
+    directory_name = "cam_diag6"
+    
+class CamDif(StandardProsilicaWithHDF5):
+    directory_name = "cam_dif"
 
 
 class TIFFPluginWithFileStore(TIFFPlugin_V22, FileStoreTIFFIterativeWrite): #RIPPED OFF FROM CHX because mutating H5 has wrong shape for color img
@@ -475,7 +490,7 @@ class StandardProsilicaWithTIFF(StandardCam): #RIPPED OFF FROM CHX and not using
     def stage(self, *args, **kwargs):
         self.tiff.write_path_template = asset_path() + f"{self.name}/%Y/%m/%d"
         self.tiff.read_path_template = asset_path() + f"{self.name}/%Y/%m/%d"
-        self.tiff.root = asset_path() + f"{self.name}"
+        self.tiff.reg_root = asset_path() + f"{self.name}"
         return super().stage(*args, **kwargs)
     
 
@@ -588,9 +603,9 @@ class AxisCamBase(AreaDetector):
             self.cam.acquire.get() == 1
         )
 
-        self.hdf5.write_path_template = asset_path() + f"{self.name}/%Y/%m/%d"
-        self.hdf5.read_path_template = asset_path() + f"{self.name}/%Y/%m/%d"
-        self.hdf5.root = asset_path() + f"{self.name}"
+        self.hdf5.write_path_template = asset_path() + "axis-1/%Y/%m/%d"
+        self.hdf5.read_path_template = asset_path() + "axis-1/%Y/%m/%d"
+        self.hdf5.reg_root = asset_path() + "axis-1"
 
         # Adjust timeout relative to acquire_time and acquire_period
         exposure_time = self.cam.acquire_time.get()
@@ -876,7 +891,7 @@ class ProductionCamStandard(SingleTrigger, ProductionCamBase):
     def stage(self):
         self.hdf5.write_path_template = asset_path() + f"{self.name}/%Y/%m/%d"
         self.hdf5.read_path_template = asset_path() + f"{self.name}/%Y/%m/%d"
-        self.hdf5.root = asset_path() + f"{self.name}"
+        self.hdf5.reg_root = asset_path() + f"{self.name}"
         return super().stage()
 
     def make_data_key(self):

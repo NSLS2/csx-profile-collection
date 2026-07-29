@@ -4,6 +4,7 @@ EpicsSignalBase.set_defaults(timeout=10, connection_timeout=10)
 EpicsSignal.set_defaults(timeout=10, connection_timeout=10)
 
 import os
+import copy
 import appdirs
 import nslsii
 from nslsii.sync_experiment import sync_experiment as sync_exp
@@ -110,11 +111,13 @@ def patch_resource(doc):
 
     if doc.get("spec") in ["AD_HDF5"]:
         kwargs.update({"dataset": 'entry/instrument/detector/data'})
+        kwargs["join_method"] = "stack"
     elif doc.get("spec") in ["AD_TIFF"]:
         kwargs["template"] = "/" + kwargs["template"].lstrip("/")    # Ensure leading slash
         kwargs["join_method"] = "stack"
     elif doc.get("spec") in ["AD_HDF5_DET_TS"]:
         kwargs.update({"dataset": '/entry/instrument/NDAttributes/NDArrayTimeStamp'})
+        kwargs["join_method"] = "stack"
 
     return doc
 
