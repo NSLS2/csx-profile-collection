@@ -1,6 +1,7 @@
 import sys
 from pathlib import Path
 from unittest.mock import patch, MagicMock
+import os
 import pytest
 import matplotlib
 
@@ -70,6 +71,16 @@ def mock_nslsii():
          patch('nslsii.configure_olog'):
         yield
 
+@pytest.fixture
+def mock_services():
+    with patch("redis.Redis", return_value=MagicMock()), \
+         patch("tiled.client.from_profile", return_value=MagicMock()), \
+         patch("tiled.client.from_uri", return_value=MagicMock()), \
+         patch("pyOlog.SimpleOlogClient", return_value=MagicMock()):
+        os.environ["TILED_BLUESKY_WRITING_API_KEY_CSX"] = "mocked_api_key"
+        yield
+    del os.environ["TILED_BLUESKY_WRITING_API_KEY_CSX"]
+
 
 @pytest.fixture
 def startup_dir():
@@ -80,7 +91,7 @@ def startup_dir():
     sys.path.remove(str(startup_dir))
 
 
-def test_startup(startup_dir):
+def test_startup(startup_dir, mock_services):
     from IPython.core.interactiveshell import InteractiveShell
     
     shell = InteractiveShell.instance()

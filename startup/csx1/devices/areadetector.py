@@ -1,6 +1,7 @@
 import logging
 from typing import Union, Optional
 from functools import reduce
+from csx1.startup import asset_path
 
 import networkx as nx
 from ophyd import (EpicsScaler, EpicsSignal, EpicsSignalRO, Device, BlueskyInterface,
@@ -236,7 +237,7 @@ class StandardCam(SingleTrigger, AreaDetector):#TODO is there something more sta
     roi2 = Cpt(ROIPlugin, 'ROI2:')
     roi3 = Cpt(ROIPlugin, 'ROI3:')
     roi4 = Cpt(ROIPlugin, 'ROI4:')
-    #proc1 = Cpt(ProcessPlugin, 'Proc1:')
+    proc1 = Cpt(ProcessPlugin, 'Proc1:')
     trans1 = Cpt(TransformPlugin, 'Trans1:')
     over1 = Cpt(OverlayPlugin, 'Over1:') ##for crosshairs in tiff
 
@@ -418,11 +419,33 @@ class HDF5PluginWithFileStorePlain(HDF5Plugin_V22, FileStoreHDF5IterativeWrite):
 class StandardProsilicaWithHDF5(StandardCam):
     hdf5 = Cpt(HDF5PluginWithFileStorePlain,
               suffix='HDF1:',
-              write_path_template='/nsls2/data/csx/legacy/prosilica_data/hdf5/%Y/%m/%d',
-              root='/nsls2/data/csx/legacy')
+              write_path_template='',
+              )
+
+    def subscribe(self, *args, **kwargs):
+        #TODO centroid.x was orignally cenx, neither work in substribing. - figure out later.
+        return self.stats1.centroid.x.subscribe(*args, **kwargs) #TODO if this works, then add stats1.ceny too.
+        # return self.stast1.centroid.y.subscribe(*args, **kwargs) #TODO if this works, then add stats1.ceny too.
+
+    def unsubuscribe(self, *args, **kwargs):
+        return self.stats1.centroid.x.unsubscribe(*args, **kwargs)
+        # return self.stats1.centroid.y.unsubscribe(*args, **kwargs)
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.hdf5.kind = "normal"
+
+    def stage(self, *args, **kwargs):
+        self.hdf5.write_path_template = asset_path() + f"{self.directory_name}/%Y/%m/%d"
+        self.hdf5.read_path_template = asset_path() + f"{self.directory_name}/%Y/%m/%d"
+        self.hdf5.reg_root = asset_path() + f"{self.directory_name}"
+        return super().stage(*args, **kwargs)
+
+class CamDiag6(StandardProsilicaWithHDF5):
+    directory_name = "cam_diag6"
+    
+class CamDif(StandardProsilicaWithHDF5):
+    directory_name = "cam_dif"
 
 
 class TIFFPluginWithFileStore(TIFFPlugin_V22, FileStoreTIFFIterativeWrite): #RIPPED OFF FROM CHX because mutating H5 has wrong shape for color img
@@ -458,11 +481,17 @@ class TIFFPluginWithFileStore(TIFFPlugin_V22, FileStoreTIFFIterativeWrite): #RIP
 class StandardProsilicaWithTIFF(StandardCam): #RIPPED OFF FROM CHX and not using their custom StandardProcilica class (StandardCam here)
     tiff = Cpt(TIFFPluginWithFileStore,
                suffix='TIFF1:',              
-               write_path_template='/nsls2/data/csx/legacy/prosilica_data/tiff/%Y/%m/%d',
-               root='/nsls2/data/csx/legacy')
+               write_path_template='',
+               )
     def __init__(self, *args, **kwargs): #TODOandi-understand why must be self, #TODOclaudio should we do this for stats?
         super().__init__(*args, **kwargs)
         self.tiff.kind = "normal"
+
+    def stage(self, *args, **kwargs):
+        self.tiff.write_path_template = asset_path() + f"{self.name}/%Y/%m/%d"
+        self.tiff.read_path_template = asset_path() + f"{self.name}/%Y/%m/%d"
+        self.tiff.reg_root = asset_path() + f"{self.name}"
+        return super().stage(*args, **kwargs)
     
 
 ### LOOKS LIKE FCCD STUFF STARTS HERE
@@ -529,9 +558,8 @@ class AxisCamBase(AreaDetector):
     over1 = Cpt(OverlayPlugin, 'Over1:')
     hdf5 = Cpt(HDF5PluginWithFileStorePlain,
               suffix='HDF1:',
-              read_path_template='/nsls2/data/csx/legacy/axis_data/hdf5/%Y/%m/%d',
-              root='/nsls2/data/csx/legacy/axis_data/hdf5',
-              write_path_template='/nsls2/data/csx/legacy/axis_data/hdf5/%Y/%m/%d',
+              read_path_template='',
+              write_path_template='',
               path_semantics='posix')
     pva1 = Cpt(PvaPluginWithPluginAttributes, 'Pva1:')
     _default_plugin_graph: Optional[dict[PluginBase, Union[CamBase, PluginBase]]] = None
@@ -574,6 +602,10 @@ class AxisCamBase(AreaDetector):
             self.cam.image_mode.get(as_string=True) == "Continuous" and
             self.cam.acquire.get() == 1
         )
+
+        self.hdf5.write_path_template = asset_path() + "axis-1/%Y/%m/%d"
+        self.hdf5.read_path_template = asset_path() + "axis-1/%Y/%m/%d"
+        self.hdf5.reg_root = asset_path() + "axis-1"
 
         # Adjust timeout relative to acquire_time and acquire_period
         exposure_time = self.cam.acquire_time.get()
@@ -853,11 +885,14 @@ class ProductionCamStandard(SingleTrigger, ProductionCamBase):
 
     hdf5 = Cpt(HDF5PluginWithFileStore,
                suffix='HDF1:',
-               #write_path_template='/GPFS/xf23id/xf23id1/fccd_data/%Y/%m/%d/',
-               write_path_template='/nsls2/data/csx/legacy/fccd_data/%Y/%m/%d/',
-               #root='/GPFS/xf23id/xf23id1/',
-               root='/nsls2/data/csx/legacy',
+               write_path_template='',
                reg=None)  # placeholder to be set on instance as obj.hdf5.reg
+
+    def stage(self):
+        self.hdf5.write_path_template = asset_path() + f"{self.name}/%Y/%m/%d"
+        self.hdf5.read_path_template = asset_path() + f"{self.name}/%Y/%m/%d"
+        self.hdf5.reg_root = asset_path() + f"{self.name}"
+        return super().stage()
 
     def make_data_key(self):
         """

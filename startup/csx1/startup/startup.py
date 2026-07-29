@@ -17,5 +17,18 @@ from IPython import get_ipython
 
 ip = get_ipython()
 RE = ip.user_ns['RE']
+c = ip.user_ns['c']
 db = ip.user_ns['db']
 sd = ip.user_ns['sd']
+
+def proposal_path():
+    """
+    Return the path to the proposal directory for this beamline.
+    """
+    return f"/nsls2/data/csx/proposals/{RE.md['cycle']}/{RE.md['data_session']}/"
+
+def asset_path():
+    """
+    Return the path to the asset directory for this beamline.
+    """
+    return proposal_path() + "assets/"
