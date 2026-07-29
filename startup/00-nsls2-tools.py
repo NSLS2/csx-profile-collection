@@ -111,6 +111,11 @@ def patch_descriptor(doc):
         if "dtype_str" in val:
             val["dtype_str"] = numpy.dtype(val["dtype_str"]).str
 
+    if "tardis" in doc["configuration"] and "data" in doc["configuration"]["tardis"]:
+        for key, val in doc["configuration"]["tardis"]["data"].items():
+            if isinstance(val, np.ndarray):
+                doc["configuration"]["tardis"]["data"][key] = list(val)
+
     return doc
 
 
