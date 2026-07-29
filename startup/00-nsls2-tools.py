@@ -11,7 +11,6 @@ from nslsii.sync_experiment import sync_experiment as sync_exp
 from IPython import get_ipython
 from bluesky.utils import PersistentDict
 from pathlib import Path
-import time as ttime
 from csx1.analysis.callbacks import BECwithTicks
 from tiled.client import from_profile
 from bluesky_tiled_plugins import TiledWriter
