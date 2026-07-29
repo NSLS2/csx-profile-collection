@@ -91,7 +91,7 @@ def startup_dir():
     sys.path.remove(str(startup_dir))
 
 
-def test_startup(startup_dir):
+def test_startup(startup_dir, mock_services):
     from IPython.core.interactiveshell import InteractiveShell
     
     shell = InteractiveShell.instance()
