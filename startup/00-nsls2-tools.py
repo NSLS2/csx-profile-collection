@@ -83,22 +83,10 @@ def patch_resource(doc):
 
 class TiledInserter:
     def insert(self, name, doc):
-        ATTEMPTS = 20
-        error = None
-        for attempt in range(ATTEMPTS):
-            try:
-                tiled_writing_client_raw.post_document(name, doc)
-            except Exception as exc:
-                print("Document saving failure:", repr(exc))
-                error = exc
-            else:
-                break
-            ttime.sleep(2)
-        else:
-            # Out of attempts
-            raise error
+        tiled_writing_client_raw.post_document(name, doc)
 
 tiled_writing_client = from_profile('nsls2', api_key=os.environ.get('TILED_BLUESKY_WRITING_API_KEY_CSX'))["csx"]
+tiled_writing_client.context.http_client.headers['tiled-qos'] = 'acquisition'
 tiled_writing_client_raw = tiled_writing_client["raw"]
 tiled_writing_client_sql = tiled_writing_client["migration"]
 
@@ -113,13 +101,15 @@ tw = TiledWriter(
             "AD_HDF5_DET_TS": "application/x-hdf5",
             "AD_TIFF": "multipart/related;type=image/tiff",
         })
-tiled_reading_client_raw = from_profile("nsls2")["csx"]["raw"]
-c = tiled_reading_client_sql = from_profile("nsls2")["csx"]["migration"]
+tiled_reading_client = from_profile("nsls2")["csx"]
+tiled_reading_client.context.http_client.headers['tiled-qos'] = 'acquisition'
+tiled_reading_client_raw = tiled_reading_client["raw"]
+c = tiled_reading_client_sql = tiled_reading_client["migration"]
 
 ip = get_ipython()
 nslsii.configure_base(
     ip.user_ns,
-    'csx',
+    tiled_inserter,
     publish_documents_with_kafka=True,
     bec=False,
     redis_url="xf23id1-csx-redis1.nsls2.bnl.gov",
