@@ -82,6 +82,8 @@ def patch_resource(doc):
     return doc
 
 class TiledInserter:
+    name = "csx"
+
     def insert(self, name, doc):
         tiled_writing_client_raw.post_document(name, doc)
 
