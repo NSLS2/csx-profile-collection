@@ -6,6 +6,7 @@ EpicsSignal.set_defaults(timeout=10, connection_timeout=10)
 import os
 import appdirs
 import nslsii
+from nslsii.sync_experiment import sync_experiment as sync_exp
 from IPython import get_ipython
 from bluesky.utils import PersistentDict
 from pathlib import Path
@@ -13,7 +14,43 @@ import time as ttime
 from csx1.analysis.callbacks import BECwithTicks
 from tiled.client import from_profile
 from bluesky_tiled_plugins import TiledWriter
+from databroker import Broker
 import numpy
+
+
+def sync_experiment(proposal_number):
+    sync_exp(proposal_number, beamline="csx", redis_db=0, redis_ssl=True)
+
+
+def tiled_login():
+    if "tiled_reading_client" not in globals():
+        raise RuntimeError(
+            "tiled_reading_client is not defined."
+            'Please create it by first calling: tiled_reading_client = from_profile("nsls2")["csx"]'
+        )
+    tiled_reading_client.login()
+    tiled_reading_client_raw = tiled_reading_client["raw"]
+    c = tiled_reading_client_sql = tiled_reading_client["migration"]
+
+
+# check the current logged in + active user
+def whoami():
+    try:
+        print(f"\nLogged in to Tiled as: {c.context.whoami()['identities'][0]['id']}\n")
+    except TypeError as e:
+        print("\nNot authenticated with Tiled! Please login...\n")
+    print(f"To login as a different user, call 'tiled_login()'")
+
+
+# check the currently active proposal
+def whichproposal():
+    try:
+        print(f"\nThe currently active proposal is: {RE.md['data_session']}\n")
+    except KeyError as e:
+        print("\nNo active proposal! Please activate a proposal...\n")
+    print(
+        f"To activate a different proposal, use 'sync_experiment(proposal_number_here)'"
+    )
 
 
 def patch_descriptor(doc):
@@ -119,6 +156,7 @@ nslsii.configure_base(
     redis_ssl=True,
 )
 nslsii.configure_olog(ip.user_ns)
+db = Broker(tiled_reading_client_raw) # for legacy support
 
 bec = BECwithTicks()
 peaks = bec.peaks  # just as alias for less typing
@@ -127,3 +165,9 @@ RE.subscribe(tw)
 
 
 from csx1.startup import *
+
+print("#" * 50)
+whoami()
+whichproposal()
+print()
+print("#" * 50)
