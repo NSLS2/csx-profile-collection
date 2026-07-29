@@ -17,6 +17,7 @@ from tiled.client import from_profile
 from bluesky_tiled_plugins import TiledWriter
 from databroker import Broker
 import numpy
+import warnings
 
 
 def sync_experiment(proposal_number):
@@ -24,14 +25,29 @@ def sync_experiment(proposal_number):
 
 
 def tiled_login():
+    global tiled_reading_client_raw, tiled_reading_client_sql, c
+
     if "tiled_reading_client" not in globals():
         raise RuntimeError(
-            "tiled_reading_client is not defined."
+            "tiled_reading_client is not defined. "
             'Please create it by first calling: tiled_reading_client = from_profile("nsls2")["csx"]'
         )
     tiled_reading_client.login()
     tiled_reading_client_raw = tiled_reading_client["raw"]
     c = tiled_reading_client_sql = tiled_reading_client["migration"]
+
+
+def tiled_logout():
+    if "tiled_reading_client" not in globals():
+        warnings.warn(
+            "tiled_reading_client is not defined. "
+            "No client(s) to log out of!"
+        )
+        return
+
+    tiled_reading_client.logout()
+    tiled_reading_client_raw.logout()
+    tiled_reading_client_sql.logout()
 
 
 # check the current logged in + active user
