@@ -1,95 +1,74 @@
-from nslsii.detectors.xspress3 import (XspressTrigger,
-                                       Xspress3Detector,
-                                       Xspress3FileStore,
-                                       Xspress3Channel,
-                                       Xspress3ROI)
-from ophyd.areadetector.plugins import PluginBase
+"""Opt-in CSX Xspress3 device and interactive plans.
+
+Run this file from the configured CSX IPython profile, where ``RE`` is defined.
+"""
+
+from pathlib import PurePosixPath
+
+import bluesky.plan_stubs as bps
+import bluesky.plans as bp
+from nslsii.ophyd_async import NSLS2PathProvider
+from nslsii.ophyd_async.devices import (
+    Xspress3Detector,
+    Xspress3HDFWriterFactory,
+)
+
+
+xsp3 = Xspress3Detector(
+    "XF:23ID1-ES{XP3}:",
+    Xspress3HDFWriterFactory(
+        NSLS2PathProvider(
+            RE.md,
+            base_data_dir=PurePosixPath("/nsls2/data/csx/proposals"),
+        ),
+        writer_suffix="HDF1:",
+        include_roi_streams=True,
+        include_sca_streams=False,
+        hinted_streams=("channel1-roi1", "channel1-roi2"),
+    ),
+    channel_numbers=(1,),
+    mca_roi_numbers=tuple(range(1, 17)),
+    driver_suffix="det1:",
+    include_roi_reset=False,
+    name="xsp3",
+)
 
 
 def ct_xsp3(dets, num=1, **kwargs):
-    """ Assign num to total_points.
-    """
-    for d in dets:
-        if d.name == 'xsp3':
-            if hasattr(d, 'total_points'):
-                yield from bps.mov(d.total_points, num)
-    return (yield from ct(dets, num=num, **kwargs))
+    """Count detectors without legacy Xspress3 acquisition state."""
+    return (yield from bp.count(dets, num=num, **kwargs))
 
-
-class Xspress3FileStoreFix(Xspress3FileStore):
-
-    def stage(self):
-        # self._resource_uid is None from Xspress3FileStore, becuase
-        # in Xspress3FileStore self.stage() method, self._resource is Used
-        # instead of self._resource_uid. This is because hxntools
-        # uses name like self._resourceself.
-        # upstream fix is expected in nslsii, this is only quick fix now.
-        ret = super().stage()
-        self._resource_uid = self._resource
-        return ret
-
-
-class CSXXspress3Detector(XspressTrigger, Xspress3Detector):
-    roi_data = Cpt(PluginBase, 'ROIDATA:')
-    channel1 = Cpt(Xspress3Channel,
-                   'C1_', channel_num=1,
-                   read_attrs=['rois'])
-    # arrsum = Cpt(Xspress3Detector, 'ARRSUM1:ArrayData', read_attrs=[], configuration_attrs=[])
-    # arr1 =Cpt(Xspress3Detector, 'ARR1:ArrayData', read_attrs=[], configuration_attrs=[])
-
-    hdf5 = Cpt(Xspress3FileStore, 'HDF5:',
-               write_path_template='/GPFS/xf23id/xf23id1/xspress3_data/%Y/%m/%d/',
-               root='/GPFS/xf23id/xf23id1/')
-
-    def __init__(self, prefix, *, num_images=2, configuration_attrs=None, read_attrs=None,
-                 **kwargs):
-        self.num_images = num_images
-        if configuration_attrs is None:
-            configuration_attrs = ['external_trig', 'total_points',
-                                   'spectra_per_point', 'settings',
-                                   'rewindable']
-        if read_attrs is None:
-            read_attrs = ['channel1', 'hdf5']
-        super().__init__(prefix, configuration_attrs=configuration_attrs,
-                         read_attrs=read_attrs, **kwargs)
-
-    def stage(self):
-        super().stage()
-        self.settings.num_images.put(self.num_images)
-
-    def unstage(self):
-        #self.hdf5.capture.put(0)
-        super().unstage()
-
-    @property
-    def hints(self):
-        return {'fields': ['xsp3_roi_01','xsp3_roi_02']}
-
-
-xsp3 = CSXXspress3Detector('XF:23ID1-ES{XP3}:', name='xsp3', roi_sums=True)
-
-
-for j, r in enumerate(xsp3.channel1.all_rois):
-    r.value.name = 'xsp3_roi_{:02d}'.format(j+1)
-    r.value_sum.name = 'xsp3_accumulated_roi_{:02d}'.format(j+1)
-    r.read_attrs = ['value', 'value_sum']
 
 def setup_rois(channel, roi_width):
-    for j, roi in enumerate(channel.all_rois):
-        yield from bp.mv(roi.bin_low, j*roi_width)
-        yield from bp.sleep(1)
-        yield from bp.mv(roi.bin_high, (j+1)*roi_width)
-        yield from bp.sleep(1)
+    """Configure consecutive half-open bins while preserving ROI enablement."""
+    for index, roi in enumerate(channel.rois.values()):
+        enabled = yield from bps.rd(roi.enabled)
+        low_bin = index * roi_width
+        high_bin = (index + 1) * roi_width
+        yield from bps.wait_for(
+            [
+                lambda roi=roi, low=low_bin, high=high_bin, enabled=enabled: (
+                    roi.set_roi_bins(low, high, enabled=enabled)
+                )
+            ]
+        )
+
 
 def roi_for_elements(channel, list_of_elm):
-    for roi, elm in zip(channel.all_rois, list_of_elm):
-        low, high = get_range(elm)
-        yield from bp.abs_set(roi.bin_low, low, wait=True, timeout=1)
-        yield from bp.sleep(.5)
-        yield from bp.abs_set(roi.bin_high, high, wait=True, timeout=1)
-        yield from bp.sleep(.5)
+    """Configure consecutive ROIs for named elemental ranges."""
+    for roi, element in zip(channel.rois.values(), list_of_elm):
+        enabled = yield from bps.rd(roi.enabled)
+        low_bin, high_bin = get_range(element)
+        yield from bps.wait_for(
+            [
+                lambda roi=roi, low=low_bin, high=high_bin, enabled=enabled: (
+                    roi.set_roi_bins(low, high, enabled=enabled)
+                )
+            ]
+        )
+
 
 def get_range(elm):
-    elm_map = {'Fe': [70, 72],
-               'Ni': [84, 86]}
+    """Return the established half-open MCA range for an element."""
+    elm_map = {"Fe": [70, 72], "Ni": [84, 86]}
     return elm_map[elm]
