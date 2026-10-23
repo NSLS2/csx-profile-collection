@@ -2,12 +2,13 @@
 channels = ["conda-forge"]
 name = "csx-profile-collection"
 platforms = [{ platform = "linux-64", glibc = "2.17" }]
-version = "2026.2.0"
+version = "2026.3.0"
+requires-pixi = ">=0.82.1"
 
 [feature.profile.dependencies]
 bluesky-base = "==1.15.0"
 bluesky-queueserver = "*"
-matplotlib-base= ">=3.10"
+matplotlib-base = ">=3.10"
 networkx = ">=3.4.2,<4"
 nslsii = "==0.11.9"
 numpy = "*"
@@ -25,6 +26,9 @@ databroker = "==2.0.0"
 epicscorelibs = ">=7.0.7.99.1.1,<8"
 bluesky-tiled-plugins = "==2.0.9"
 ophyd-async = ">=0.13.7,<0.14"
+ca-certificates = ">=2026.10.19"
+certifi = ">=2026.10.19"
+pip = ">=26.2.2"
 
 [feature.profile.pypi-dependencies]
 pvxslibs = ">=1.3.2, <2"
@@ -57,7 +61,14 @@ ipython = ">=9.5.0"
 [feature.test.tasks]
 tests = "pytest tests"
 
-[environments]
-test = {features=["profile", "test"], solve-group="profile"}
-terminal = {features=["profile", "terminal"], solve-group="profile"}
-qs = {features=["profile", "qs"], solve-group="profile"}
+[environments.test]
+features = ["profile", "test"]
+solve-group = "profile"
+
+[environments.terminal]
+features = ["profile", "terminal"]
+solve-group = "profile"
+
+[environments.qs]
+features = ["profile", "qs"]
+solve-group = "profile"
