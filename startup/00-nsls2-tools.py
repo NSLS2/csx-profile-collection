@@ -175,7 +175,7 @@ ip = get_ipython()
 nslsii.configure_base(
     ip.user_ns,
     tiled_inserter,
-    publish_documents_with_kafka=True,
+    publish_documents_with_kafka="csx",
     bec=False,
     redis_url="xf23id1-csx-redis1.nsls2.bnl.gov",
     redis_port=6380,
