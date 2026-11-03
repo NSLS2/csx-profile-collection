@@ -166,6 +166,24 @@ tw = TiledWriter(
             "AD_TIFF": "multipart/related;type=image/tiff",
         })
 tw = BufferingWrapper(tw)  # in-process queue: RE never blocks
+
+
+def flush_tiled(timeout=30):
+    """Block until all queued documents have been written to Tiled.
+
+    Documents are written to Tiled in background threads. Call this before
+    reading back a run that was just taken.
+
+    Raises RuntimeError if a buffer does not drain within ``timeout``
+    seconds or its worker thread has died.
+    """
+    for label, buffer in (("raw", tiled_inserter), ("migration", tw)):
+        if not buffer.flush(timeout):
+            raise RuntimeError(
+                f"Tiled {label} buffer was not flushed within {timeout} s "
+                "(timed out or its worker thread died)."
+            )
+
 tiled_reading_client = from_profile("nsls2")["csx"]
 tiled_reading_client.context.http_client.headers['tiled-qos'] = 'acquisition'
 tiled_reading_client_raw = tiled_reading_client["raw"]
