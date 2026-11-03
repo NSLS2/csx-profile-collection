@@ -9,9 +9,8 @@ import appdirs
 import nslsii
 from nslsii.sync_experiment import sync_experiment as sync_exp
 from IPython import get_ipython
-from bluesky.callbacks.buffer import BufferingWrapper
 from bluesky.utils import PersistentDict
-from bluesky_tiled_plugins import TiledInserter, TiledWriter
+from bluesky_tiled_plugins import BufferingWrapper, TiledInserter, TiledWriter
 from pathlib import Path
 from csx1.analysis.callbacks import BECwithTicks
 from tiled.client import from_profile
