@@ -10,10 +10,10 @@ import nslsii
 from nslsii.sync_experiment import sync_experiment as sync_exp
 from IPython import get_ipython
 from bluesky.utils import PersistentDict
+from bluesky_tiled_plugins import BufferingWrapper, TiledInserter, TiledWriter
 from pathlib import Path
 from csx1.analysis.callbacks import BECwithTicks
 from tiled.client import from_profile
-from bluesky_tiled_plugins import TiledWriter
 from databroker import Broker
 import numpy
 import warnings
@@ -141,21 +141,22 @@ def patch_resource(doc):
 
     return doc
 
-class TiledInserter:
-    name = "csx"
 
-    def insert(self, name, doc):
-        tiled_writing_client_raw.post_document(name, doc)
-
+TILED_BACKUP_ROOT = "/nsls2/data/csx/shared/config/bluesky/tiled_backup"
 tiled_writing_client = from_profile('nsls2', api_key=os.environ.get('TILED_BLUESKY_WRITING_API_KEY_CSX'))["csx"]
 tiled_writing_client.context.http_client.headers['tiled-qos'] = 'acquisition'
 tiled_writing_client_raw = tiled_writing_client["raw"]
 tiled_writing_client_sql = tiled_writing_client["migration"]
 
-tiled_inserter = TiledInserter()
+tiled_inserter = TiledInserter(
+    tiled_writing_client_raw,
+    "csx",
+    backup_directory=f"{TILED_BACKUP_ROOT}/raw",
+)
+tiled_inserter = BufferingWrapper(tiled_inserter)  # in-process queue: RE never blocks
 tw = TiledWriter(
         tiled_writing_client_sql,
-        backup_directory="/tmp/tiled_backup",
+        backup_directory=f"{TILED_BACKUP_ROOT}/sql",
         patches={"descriptor": patch_descriptor,
                  "resource": patch_resource},
         spec_to_mimetype={
@@ -163,6 +164,25 @@ tw = TiledWriter(
             "AD_HDF5_DET_TS": "application/x-hdf5",
             "AD_TIFF": "multipart/related;type=image/tiff",
         })
+tw = BufferingWrapper(tw)  # in-process queue: RE never blocks
+
+
+def flush_tiled(timeout=30):
+    """Block until all queued documents have been written to Tiled.
+
+    Documents are written to Tiled in background threads. Call this before
+    reading back a run that was just taken.
+
+    Raises RuntimeError if a buffer does not drain within ``timeout``
+    seconds or its worker thread has died.
+    """
+    for label, buffer in (("raw", tiled_inserter), ("migration", tw)):
+        if not buffer.flush(timeout):
+            raise RuntimeError(
+                f"Tiled {label} buffer was not flushed within {timeout} s "
+                "(timed out or its worker thread died)."
+            )
+
 tiled_reading_client = from_profile("nsls2")["csx"]
 tiled_reading_client.context.http_client.headers['tiled-qos'] = 'acquisition'
 tiled_reading_client_raw = tiled_reading_client["raw"]
@@ -172,7 +192,7 @@ ip = get_ipython()
 nslsii.configure_base(
     ip.user_ns,
     tiled_inserter,
-    publish_documents_with_kafka=True,
+    publish_documents_with_kafka="csx",
     bec=False,
     redis_url="xf23id1-csx-redis1.nsls2.bnl.gov",
     redis_port=6380,
