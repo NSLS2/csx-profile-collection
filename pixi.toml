@@ -2,19 +2,20 @@
 channels = ["conda-forge"]
 name = "csx-profile-collection"
 platforms = [{ platform = "linux-64", glibc = "2.17" }]
-version = "2026.2.0"
+version = "2026.3.0"
+requires-pixi = ">=0.82.1"
 
 [feature.profile.dependencies]
 bluesky-base = "==1.15.0"
 bluesky-queueserver = "*"
-matplotlib-base= ">=3.10"
+matplotlib-base = ">=3.10"
 networkx = ">=3.4.2,<4"
 numpy = "*"
 ophyd = ">=1.11.0"
 pyepics = "*"
 python = ">=3.12,<3.13"
 semver = ">=3.0.4,<4"
-tiled-client = "==0.2.14"
+tiled-client = ">=0.2.21"
 gobject-introspection = ">=1.84.0,<2"
 pygobject = ">=3.50.0,<4"
 hklpy = ">=1.1.2,<2"
@@ -22,8 +23,11 @@ hdf5-external-filter-plugins = ">=0.1.0,<0.2"
 blosc-hdf5-plugin = ">=1.0.1,<2"
 databroker = "==2.0.0"
 epicscorelibs = ">=7.0.7.99.1.1,<8"
-bluesky-tiled-plugins = "==2.0.9"
-ophyd-async = "==0.21.3"
+bluesky-tiled-plugins = ">=2.0.13"
+ca-certificates = ">=2026.10.19"
+certifi = ">=2026.10.19"
+pip = ">=26.2.2"
+graphql-core = ">=3.2,<3.3"
 
 [feature.profile.pypi-dependencies]
 pvxslibs = ">=1.3.2, <2"
@@ -58,7 +62,14 @@ ipython = ">=9.5.0"
 [feature.test.tasks]
 tests = "pytest tests"
 
-[environments]
-test = {features=["profile", "test"], solve-group="profile"}
-terminal = {features=["profile", "terminal"], solve-group="profile"}
-qs = {features=["profile", "qs"], solve-group="profile"}
+[environments.test]
+features = ["profile", "test"]
+solve-group = "profile"
+
+[environments.terminal]
+features = ["profile", "terminal"]
+solve-group = "profile"
+
+[environments.qs]
+features = ["profile", "qs"]
+solve-group = "profile"
