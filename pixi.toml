@@ -27,7 +27,7 @@ ophyd-async = "==0.21.3"
 
 [feature.profile.pypi-dependencies]
 pvxslibs = ">=1.3.2, <2"
-nslsii = { git = "https://github.com/thopkins32/nslsii.git", rev = "e6a54032ef932f8a99b581b450fdb942ba24ceb7" }
+nslsii = "==0.12.0"
 
 [feature.qs.dependencies]
 bluesky-queueserver = "*"

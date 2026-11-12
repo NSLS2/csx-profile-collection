@@ -24,7 +24,7 @@ xsp3 = Xspress3Detector(
         writer_suffix="HDF1:",
         include_roi_streams=True,
         include_sca_streams=False,
-        hinted_streams=("channel1-roi1", "channel1-roi2"),
+        hinted_streams=("xsp3-channel1-roi1", "xsp3-channel1-roi2"),
     ),
     channel_numbers=(1,),
     mca_roi_numbers=tuple(range(1, 17)),
