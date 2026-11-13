@@ -3,37 +3,41 @@
 Run this file from the configured CSX IPython profile, where ``RE`` is defined.
 """
 
+import os
 from pathlib import PurePosixPath
 
 import bluesky.plan_stubs as bps
 import bluesky.plans as bp
+from ophyd_async.core import init_devices
 from nslsii.ophyd_async import NSLS2PathProvider
 from nslsii.ophyd_async.devices import (
     Xspress3Detector,
     Xspress3HDFWriterFactory,
 )
 
+os.environ["OPHYD_ASYNC_PRESERVE_DETECTOR_STATE"] = "YES"
 
-xsp3 = Xspress3Detector(
-    "XF:23ID1-ES{Xsp:1}:",
-    Xspress3HDFWriterFactory(
-        NSLS2PathProvider(
-            RE.md,
-            base_data_dir=PurePosixPath("/nsls2/data/csx/proposals"),
+with init_devices():
+    xsp3 = Xspress3Detector(
+        "XF:23ID1-ES{Xsp:1}:",
+        Xspress3HDFWriterFactory(
+    	NSLS2PathProvider(
+    	    RE.md,
+    	    base_data_dir=PurePosixPath("/nsls2/data/csx/proposals"),
+    	),
+    	writer_suffix="HDF1:",
+    	include_roi_streams=True,
+    	include_sca_streams=False,
+    	hinted_streams=("xspress3-1-channel1-roi1", "xspress3-1-channel1-roi2"),
         ),
-        writer_suffix="HDF1:",
-        include_roi_streams=True,
-        include_sca_streams=False,
-        hinted_streams=("xspress3-1-channel1-roi1", "xspress3-1-channel1-roi2"),
-    ),
-    channel_numbers=(1,),
-    mca_roi_numbers=tuple(range(1, 17)),
-    driver_suffix="det1:",
-    include_roi_reset=False,
-    # NSLS2PathProvider writes under assets/<name>/, the registered proposal
-    # asset directory for this detector.
-    name="xspress3-1",
-)
+        channel_numbers=(1,),
+        mca_roi_numbers=tuple(range(1, 17)),
+        driver_suffix="det1:",
+        include_roi_reset=False,
+        # NSLS2PathProvider writes under assets/<name>/, the registered proposal
+        # asset directory for this detector.
+        name="xspress3-1",
+    )
 
 
 def ct_xsp3(dets, num=1, **kwargs):
