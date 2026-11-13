@@ -77,13 +77,13 @@ async def test_script_has_shared_detector_channels_rois_suffixes_and_hints(tmp_p
     assert tuple(detector.channels) == (1,)
     assert tuple(detector.channels[1].rois) == tuple(range(1, 17))
     assert detector.driver.acquire.source == (
-        "mock+ca://XF:23ID1-ES{XP3}:det1:Acquire_RBV"
+        "mock+ca://XF:23ID1-ES{Xsp:1}:det1:Acquire_RBV"
     )
     assert detector.hdf.capture.source == (
-        "mock+ca://XF:23ID1-ES{XP3}:HDF1:Capture_RBV"
+        "mock+ca://XF:23ID1-ES{Xsp:1}:HDF1:Capture_RBV"
     )
     assert detector.hints == {
-        "fields": ["xsp3-channel1-roi1", "xsp3-channel1-roi2"]
+        "fields": ["xspress3-1-channel1-roi1", "xspress3-1-channel1-roi2"]
     }
 
 
@@ -92,9 +92,9 @@ async def test_internal_trigger_emits_only_standard_spectrum_and_roi_streams(tmp
     detector = load_script(tmp_path)["xsp3"]
     await connect_and_seed(detector)
     expected_keys = {
-        "xsp3",
-        "xsp3-channel1",
-        *(f"xsp3-channel1-roi{number}" for number in range(1, 17)),
+        "xspress3-1",
+        "xspress3-1-channel1",
+        *(f"xspress3-1-channel1-roi{number}" for number in range(1, 17)),
     }
 
     await detector.stage()
