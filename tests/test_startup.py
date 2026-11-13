@@ -122,6 +122,7 @@ def test_startup(startup_dir, mock_services):
         assert "sclr" in ns, "Scaler not found"
         assert "axis_standard" in ns, "Axis standard not found"
         assert "axis_cont" in ns, "Axis continuous not found"
+        assert "xsp3" not in ns, "Xspress3 must remain opt-in until deployment validation"
         
         # Nanopositioning
         assert "nanop" in ns, "Nanop not found"
