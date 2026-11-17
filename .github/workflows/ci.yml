@@ -1,31 +1,64 @@
-name: Test IPython beamline profiles
-permissions:
-  contents: read
+name: CI
 
 on:
+  pull_request:
   push:
     branches:
       - main
-  pull_request:
-  workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
-  testing_beamline_profiles:
-    name: Test profile
-
+  lint:
+    name: Lint
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          fetch-depth: 0
           persist-credentials: false
 
-      - name: Setup Pixi
+      - name: Install pixi environment
         uses: prefix-dev/setup-pixi@ad1da6449d9e506fd127fd67ab2d054a769f6a94 # v0.11.2
         with:
           pixi-version: v0.82.1
-          cache: false
-          environments: test
+          environments: dev
 
-      - name: Run pytest
-        run: pixi run tests
+      - name: Run pre-commit checks
+        run: pixi run --as-is -e dev pre-commit run --all-files --show-diff-on-failure
+
+  unit-tests:
+    name: Unit Tests (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - environment: py311
+            python-version: "3.11"
+          - environment: py312
+            python-version: "3.12"
+          - environment: py313
+            python-version: "3.13"
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Install pixi environment
+        uses: prefix-dev/setup-pixi@ad1da6449d9e506fd127fd67ab2d054a769f6a94 # v0.11.2
+        with:
+          pixi-version: v0.82.1
+          environments: ${{ matrix.environment }}
+
+      - name: Run tests
+        run: pixi run --as-is -e ${{ matrix.environment }} tests
+
+      - name: Build distributions
+        run: pixi run --as-is -e ${{ matrix.environment }} hatch build

@@ -1,0 +1,48 @@
+---
+name: Refresh Lockfile
+
+on:
+  schedule:
+    - cron: "0 0 1 * *"
+  workflow_dispatch:
+
+jobs:
+  update:
+    name: Update Pixi Lockfile
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      
+      - name: Setup pixi
+        uses: prefix-dev/setup-pixi@ad1da6449d9e506fd127fd67ab2d054a769f6a94 # v0.11.2
+        with:
+          pixi-version: v0.82.1
+          cache: false
+          frozen: false
+
+      - name: Run pixi update
+        run: |
+          echo "Automated monthly \`pixi update\` of the lockfile." > "$RUNNER_TEMP/diff.md"
+          echo "" >> "$RUNNER_TEMP/diff.md"
+          pixi update --json \
+            | pixi exec --spec pixi-diff-to-markdown==0.3.10 pixi-diff-to-markdown \
+            >> "$RUNNER_TEMP/diff.md"
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@22a9089034f40e5a961c8808d113e2c98fb63676 # v7.0.11
+        with:
+          commit-message: "Update pixi lockfile"
+          author: >-
+            ${{ github.event_name == 'workflow_dispatch'
+              && format('{0} <{1}+{0}@users.noreply.github.com>', github.actor, github.actor_id)
+              || 'github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>' }}
+          title: "Update pixi lockfile"
+          branch: pixi-update
+          add-paths: pixi.lock
+          body-path: ${{ runner.temp }}/diff.md

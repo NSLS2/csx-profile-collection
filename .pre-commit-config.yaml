@@ -1,0 +1,79 @@
+repos:
+  - repo: local
+    hooks:
+      - id: check-added-large-files
+        name: check added large files
+        entry: check-added-large-files
+        language: system
+
+      - id: check-yaml
+        name: check yaml
+        entry: check-yaml
+        language: system
+        types: [yaml]
+
+      - id: check-toml
+        name: check toml
+        entry: check-toml
+        language: system
+        types: [toml]
+
+      - id: check-merge-conflict
+        name: check merge conflict
+        entry: check-merge-conflict
+        language: system
+        types: [text]
+
+      - id: end-of-file-fixer
+        name: end of file fixer
+        entry: end-of-file-fixer
+        language: system
+        types: [text]
+
+      - id: detect-private-key
+        name: detect private key
+        entry: detect-private-key
+        language: system
+        types: [text]
+
+      - id: ruff-format
+        name: format with ruff
+        language: system
+        entry: ruff format --force-exclude
+        types: [python]
+        require_serial: true
+
+      - id: ruff
+        name: lint with ruff
+        language: system
+        entry: ruff check --force-exclude --fix
+        types: [python]
+        require_serial: true
+
+      - id: pyright
+        name: type check with pyright
+        language: system
+        entry: pyright
+        types: [python]
+        pass_filenames: false
+        require_serial: true
+
+      - id: import-contracts
+        name: ensure import directionality
+        pass_filenames: false
+        language: system
+        entry: lint-imports
+        types: [python]
+        require_serial: false
+
+      - id: nbstripout
+        name: nbstripout
+        entry: nbstripout
+        language: system
+        types: [jupyter]
+
+      - id: mdformat
+        name: mdformat
+        entry: mdformat
+        language: system
+        types: [markdown]

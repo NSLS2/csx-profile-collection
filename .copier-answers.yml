@@ -1,0 +1,11 @@
+# Changes here will be overwritten by Copier; NEVER EDIT MANUALLY
+_commit: 9794bb6
+_src_path: gh:NSLS2/nsls2-tools-template
+author_email: ''
+author_name: Brookhaven National Laboratory
+copyright_year: '2026'
+github_organization: NSLS2
+package_name: csx_tools
+project_description: Tools for CSX beamline at NSLS-II
+project_name: csx-tools
+repository_name: csx-tools
