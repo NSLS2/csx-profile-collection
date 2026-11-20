@@ -28,8 +28,11 @@ dependencies = [
   "bluesky",
   "tiled[client]",
   "bluesky-tiled-plugins",
+  "matplotlib",
+  "numpy",
   "ophyd-async[ca, pva, sim]",
   "nslsii",
+  "pandas",
 ]
 
 [dependency-groups]
@@ -98,6 +101,8 @@ filterwarnings = [
     "error",
     "ignore:tagMap is deprecated:DeprecationWarning:ldap3",
     "ignore:typeMap is deprecated:DeprecationWarning:ldap3",
+    # Emitted by Tiled's catalog database setup when tests start a Tiled server
+    "ignore:No path_separator found in configuration:DeprecationWarning:alembic",
 ]
 # Doctest python code in docs, python code in src docstrings, test functions in tests
 testpaths = "docs src tests"

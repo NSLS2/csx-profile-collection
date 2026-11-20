@@ -13,6 +13,8 @@ from bluesky.utils import PersistentDict
 from bluesky_tiled_plugins import BufferingWrapper, TiledInserter, TiledWriter
 from pathlib import Path
 from csx1.analysis.callbacks import BECwithTicks
+from csx_tools import quicklook
+from functools import partial
 from tiled.client import from_profile
 from databroker import Broker
 import numpy
@@ -187,6 +189,12 @@ tiled_reading_client = from_profile("nsls2")["csx"]
 tiled_reading_client.context.http_client.headers['tiled-qos'] = 'acquisition'
 tiled_reading_client_raw = tiled_reading_client["raw"]
 c = tiled_reading_client_sql = tiled_reading_client["migration"]
+
+# Quick looks at recent runs, e.g. show_images(-1, 41233, diff=True)
+recent_runs = partial(quicklook.recent_runs, c)
+plot_scans = partial(quicklook.plot_scans, c)
+show_images = partial(quicklook.show_images, c)
+what_changed = partial(quicklook.what_changed, c)
 
 ip = get_ipython()
 nslsii.configure_base(
