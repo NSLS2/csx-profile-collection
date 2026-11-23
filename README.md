@@ -23,19 +23,13 @@ before, positive integers are scan IDs, and strings are (partial) UIDs. A run's
 data reach Tiled when it finishes, so an unfinished run cannot be compared yet.
 Each kind of plot reuses one window, "Quick look: scans" or "Quick look: images".
 
-The RunEngine session is busy while a plan runs. To look at data meanwhile, open
-a second IPython session, e.g. `pixi run -e terminal ipython --matplotlib=qt`,
-and bind the functions to a Tiled client:
+The RunEngine session is busy while a plan runs. To look at data meanwhile, start
+the analysis profile in a second terminal:
 
-```python
-from functools import partial
-
-from tiled.client import from_profile
-from csx_tools import quicklook
-
-c = from_profile("nsls2")["csx"]["migration"]
-recent_runs = partial(quicklook.recent_runs, c)
-plot_scans = partial(quicklook.plot_scans, c)
-show_images = partial(quicklook.show_images, c)
-what_changed = partial(quicklook.what_changed, c)
+```sh
+BS_PROFILE=analysis pixi run -e terminal start
 ```
+
+It logs in to Tiled (prompting only when no saved login exists), binds the
+functions above to the catalog `c`, and imports `np`, `pd` and `plt`. It creates
+no RunEngine or devices.
