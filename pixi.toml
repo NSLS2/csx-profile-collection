@@ -55,6 +55,7 @@ qs-server = "uvicorn --host localhost --port 60610 bluesky_httpserver.server:app
 ipython = ">=9.5.0"
 pyside6 = "*"
 numpy = ">2"
+nexpy = ">=2.1.0,<3"
 
 [feature.terminal.tasks]
 start = "unset SESSION_MANAGER PYTHONPATH && MPLBACKEND=qtagg ipython --profile-dir=."
