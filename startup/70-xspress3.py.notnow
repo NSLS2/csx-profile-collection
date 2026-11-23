@@ -17,7 +17,11 @@ from nslsii.ophyd_async.devices import (
 
 os.environ["OPHYD_ASYNC_PRESERVE_DETECTOR_STATE"] = "YES"
 
-with init_devices():
+# Automated tests set CSX_OPHYD_ASYNC_MOCK=YES so this device connects in
+# mock mode without a live Xspress3 IOC.
+_MOCK = os.environ.get("CSX_OPHYD_ASYNC_MOCK", "NO").upper() == "YES"
+
+with init_devices(mock=_MOCK):
     xsp3 = Xspress3Detector(
         "XF:23ID1-ES{Xsp:1}:",
         Xspress3HDFWriterFactory(

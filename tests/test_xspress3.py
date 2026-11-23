@@ -1,7 +1,7 @@
 import asyncio
+import os
 import runpy
 from pathlib import Path
-from types import SimpleNamespace
 from unittest.mock import patch
 
 import pytest
@@ -21,21 +21,36 @@ from ophyd_async.epics.adcore import ADBaseColorMode, ADBaseDataType, ADState
 SCRIPT_PATH = Path(__file__).parents[1] / "startup" / "70-xspress3.py.notnow"
 
 
-def load_script(tmp_path: Path):
+@pytest.fixture
+def run_engine():
+    """A ``RunEngine`` registers its dedicated event loop as *the* bluesky
+    event loop. ``init_devices()`` requires one running, same as at the
+    beamline where ``RE`` is created before this script loads.
+    """
+    engine = RunEngine({"cycle": "2099-1", "data_session": "pass-000000"})
+    try:
+        yield engine
+    finally:
+        loop = engine._loop
+        loop.call_soon_threadsafe(loop.stop)
+        engine._th.join()
+
+
+def load_script(tmp_path: Path, run_engine: RunEngine):
     path_provider = StaticPathProvider(
         StaticFilenameProvider("xspress3"),
         tmp_path,
     )
-    re = SimpleNamespace(
-        md={"cycle": "2099-1", "data_session": "pass-000000"}
-    )
-    with patch(
-        "nslsii.ophyd_async.NSLS2PathProvider",
-        return_value=path_provider,
+    with (
+        patch(
+            "nslsii.ophyd_async.NSLS2PathProvider",
+            return_value=path_provider,
+        ),
+        patch.dict(os.environ, {"CSX_OPHYD_ASYNC_MOCK": "YES"}),
     ):
         return runpy.run_path(
             str(SCRIPT_PATH),
-            init_globals={"RE": re},
+            init_globals={"RE": run_engine},
         )
 
 
@@ -69,8 +84,10 @@ async def read_roi_state(channel):
 
 
 @pytest.mark.asyncio
-async def test_script_has_shared_detector_channels_rois_suffixes_and_hints(tmp_path):
-    detector = load_script(tmp_path)["xsp3"]
+async def test_script_has_shared_detector_channels_rois_suffixes_and_hints(
+    tmp_path, run_engine
+):
+    detector = load_script(tmp_path, run_engine)["xsp3"]
     assert type(detector) is Xspress3Detector
     await detector.connect(mock=True)
 
@@ -88,8 +105,10 @@ async def test_script_has_shared_detector_channels_rois_suffixes_and_hints(tmp_p
 
 
 @pytest.mark.asyncio
-async def test_internal_trigger_emits_only_standard_spectrum_and_roi_streams(tmp_path):
-    detector = load_script(tmp_path)["xsp3"]
+async def test_internal_trigger_emits_only_standard_spectrum_and_roi_streams(
+    tmp_path, run_engine
+):
+    detector = load_script(tmp_path, run_engine)["xsp3"]
     await connect_and_seed(detector)
     expected_keys = {
         "xspress3-1",
@@ -145,36 +164,27 @@ async def test_internal_trigger_emits_only_standard_spectrum_and_roi_streams(tmp
     assert await detector.hdf.capture.get_value() is False
 
 
-def test_roi_helpers_preserve_enabled_state_and_half_open_ranges(tmp_path):
-    script = load_script(tmp_path)
+def test_roi_helpers_preserve_enabled_state_and_half_open_ranges(tmp_path, run_engine):
+    script = load_script(tmp_path, run_engine)
     detector = script["xsp3"]
     setup_rois = script["setup_rois"]
     roi_for_elements = script["roi_for_elements"]
-    event_loop = asyncio.new_event_loop()
-    run_engine = RunEngine({}, loop=event_loop)
-    try:
-        call_in_bluesky_event_loop(detector.connect(mock=True))
-        channel = detector.channels[1]
-        enabled_states = [number % 2 == 0 for number in channel.rois]
-        for roi, enabled in zip(
-            channel.rois.values(), enabled_states, strict=True
-        ):
-            set_mock_value(roi.enabled, enabled)
+    call_in_bluesky_event_loop(detector.connect(mock=True))
+    channel = detector.channels[1]
+    enabled_states = [number % 2 == 0 for number in channel.rois]
+    for roi, enabled in zip(channel.rois.values(), enabled_states, strict=True):
+        set_mock_value(roi.enabled, enabled)
 
-        run_engine(setup_rois(channel, 10))
-        expected = [
-            (index * 10, 10, enabled)
-            for index, enabled in enumerate(enabled_states)
-        ]
-        assert call_in_bluesky_event_loop(read_roi_state(channel)) == expected
+    run_engine(setup_rois(channel, 10))
+    expected = [
+        (index * 10, 10, enabled)
+        for index, enabled in enumerate(enabled_states)
+    ]
+    assert call_in_bluesky_event_loop(read_roi_state(channel)) == expected
 
-        run_engine(roi_for_elements(channel, ["Fe", "Ni"]))
-        expected[:2] = [
-            (70, 2, enabled_states[0]),
-            (84, 2, enabled_states[1]),
-        ]
-        assert call_in_bluesky_event_loop(read_roi_state(channel)) == expected
-    finally:
-        event_loop.call_soon_threadsafe(event_loop.stop)
-        run_engine._th.join()
-        event_loop.close()
+    run_engine(roi_for_elements(channel, ["Fe", "Ni"]))
+    expected[:2] = [
+        (70, 2, enabled_states[0]),
+        (84, 2, enabled_states[1]),
+    ]
+    assert call_in_bluesky_event_loop(read_roi_state(channel)) == expected
