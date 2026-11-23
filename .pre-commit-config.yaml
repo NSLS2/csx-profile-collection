@@ -1,3 +1,7 @@
+# Legacy IPython profile files, kept unchanged until migrated into src/csx_tools;
+# keep in sync with `exclude` under [tool.pyright] in pyproject.toml
+exclude: ^((acceptance_tests|startup|tests/startup)/|ipython_\w*config\.py$)
+
 repos:
   - repo: local
     hooks:

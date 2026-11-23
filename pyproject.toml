@@ -60,9 +60,9 @@ docs = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/NSLS2/csx-tools"
-Issues = "https://github.com/NSLS2/csx-tools/issues"
-Changelog = "https://github.com/NSLS2/csx-tools/releases"
+Homepage = "https://github.com/NSLS2/csx-profile-collection"
+Issues = "https://github.com/NSLS2/csx-profile-collection/issues"
+Changelog = "https://github.com/NSLS2/csx-profile-collection/releases"
 
 [tool.hatch.version]
 source = "vcs"
@@ -85,6 +85,16 @@ packages = ["src/csx_tools"]
 
 [tool.pyright]
 typeCheckingMode = "standard"
+# Legacy IPython profile files, kept unchanged until migrated into src/csx_tools;
+# keep in sync with `exclude` in .pre-commit-config.yaml
+exclude = [
+  "**/.*",
+  "**/__pycache__",
+  "acceptance_tests",
+  "ipython_*config.py",
+  "startup",
+  "tests/startup",
+]
 
 [tool.pytest.ini_options]
 # Run pytest with all our checkers, and don't spam us with massive tracebacks on error
@@ -92,6 +102,7 @@ addopts = """
     --tb=native -vv --strict-markers --doctest-modules
     --doctest-glob="*.rst" --doctest-glob="*.md"
     --ignore=docs/examples --ignore=docs/_scripts --ignore=src/csx_tools/profiles
+    --ignore=tests/startup
     """
 # https://iscinumpy.gitlab.io/post/bound-version-constraints/#watch-for-warnings
 filterwarnings = [

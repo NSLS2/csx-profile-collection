@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -62,3 +63,22 @@ jobs:
 
       - name: Build distributions
         run: pixi run --as-is -e ${{ matrix.environment }} hatch build
+
+  profile-tests:
+    name: IPython Profile Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install pixi environment
+        uses: prefix-dev/setup-pixi@ad1da6449d9e506fd127fd67ab2d054a769f6a94 # v0.11.2
+        with:
+          pixi-version: v0.82.1
+          environments: test
+
+      - name: Run tests
+        run: pixi run --as-is -e test tests

@@ -18,7 +18,7 @@ from ophyd_async.core import (
 )
 from ophyd_async.epics.adcore import ADBaseColorMode, ADBaseDataType, ADState
 
-SCRIPT_PATH = Path(__file__).parents[1] / "startup" / "70-xspress3.py.notnow"
+SCRIPT_PATH = Path(__file__).parents[2] / "startup" / "70-xspress3.py.notnow"
 
 
 @pytest.fixture

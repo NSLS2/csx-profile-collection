@@ -82,7 +82,17 @@ target/
 
 # IPython
 profile_default/
-ipython_config.py
+
+# This repository is an IPython profile directory (`ipython --profile-dir=.`):
+# per-host command history (see ipython_config.py) and %store data
+*.sqlite
+*.sqlite-journal
+db/
+# Data files saved to the working directory during a session
+*.h5
+*.hdf
+*.hdf5
+*.tiff
 
 # pyenv
 #   For a library or package, you might want to ignore these files since the code is

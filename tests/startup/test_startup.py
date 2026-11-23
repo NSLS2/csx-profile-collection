@@ -84,7 +84,7 @@ def mock_services():
 
 @pytest.fixture
 def startup_dir():
-    profile_dir = Path(__file__).parent.parent
+    profile_dir = Path(__file__).parents[2]
     startup_dir = profile_dir / "startup"
     sys.path.insert(0, str(startup_dir))
     yield startup_dir
