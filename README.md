@@ -23,6 +23,19 @@ before, positive integers are scan IDs, and strings are (partial) UIDs. A run's
 data reach Tiled when it finishes, so an unfinished run cannot be compared yet.
 Each kind of plot reuses one window, "Quick look: scans" or "Quick look: images".
 
+The IOC's `Trans1`/`Trans2` plugins transform AXIS frames on the way to the ROIs
+and the CSS display, but the HDF5 files store them untransformed. Each AXIS run
+records both transform types in its configuration
+(`<detector>_trans1_transform_type`, `<detector>_trans2_transform_type`), and
+`show_images` orients the run by its `Trans1` type, as its ROIs see it. Runs
+without a recorded type, such as AXIS runs saved before it was recorded, are
+shown as stored. `transform=` shows every run with one type:
+
+```python
+show_images(-1, 41233, transform="Rot90Mirror")  # AXIS autosave setting
+show_images(-1, 41233, transform="None")  # every run as stored
+```
+
 The RunEngine session is busy while a plan runs. To look at data meanwhile, start
 the analysis profile in a second terminal:
 

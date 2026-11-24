@@ -34,7 +34,7 @@ import re
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from datetime import datetime
 from numbers import Real
-from typing import Any, TypeAlias, cast
+from typing import Any, NamedTuple, TypeAlias, cast
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -61,6 +61,24 @@ RunRef: TypeAlias = int | str | BlueskyRun
 
 SCANS_FIGURE = "Quick look: scans"
 IMAGES_FIGURE = "Quick look: images"
+
+# Configuration field, after the detector name, holding the Transform type of the
+# plugin that feeds the detector's ROI plugins. AXIS detectors record it; their
+# HDF5 plugin saves frames untransformed.
+_ROI_TRANSFORM_FIELD = "trans1_transform_type"
+
+# Pixel moves of each areaDetector Transform plugin type on a (y, x) frame, as
+# in ADCore's NDPluginTransform.
+_TRANSFORMS: dict[str, Callable[[np.ndarray], np.ndarray]] = {
+    "None": lambda image: image,
+    "Rot90": lambda image: np.rot90(image, -1),
+    "Rot180": lambda image: image[::-1, ::-1],
+    "Rot270": lambda image: np.rot90(image, 1),
+    "Mirror": lambda image: image[:, ::-1],
+    "Rot90Mirror": lambda image: image.T,
+    "Rot180Mirror": lambda image: image[::-1, :],
+    "Rot270Mirror": lambda image: image[::-1, ::-1].T,
+}
 
 # Image data are fetched from Tiled in blocks of at most this many bytes.
 _READ_BLOCK_BYTES = 64 * 2**20
@@ -183,6 +201,7 @@ def show_images(
     diff: bool = False,
     log: bool = False,
     rois: bool = True,
+    transform: str | None = None,
     stream: str = "primary",
 ) -> Figure:
     """Show detector images of one or more runs side by side.
@@ -204,14 +223,24 @@ def show_images(
         negative values count from the end. Several frames recorded at one
         point are averaged.
     subtract
-        Run whose mean image, e.g. a dark, is subtracted from every image.
+        Run whose mean image, e.g. a dark, is subtracted from every image,
+        pixel by pixel as the files store them.
     diff
         Add a panel with the difference of the two given runs, first minus
-        second, on a symmetric diverging colour scale.
+        second, on a symmetric diverging colour scale. It is computed as the
+        files store the images and shown in the first run's orientation.
     log
         Use a logarithmic colour scale; non-positive pixels are left blank.
     rois
-        Outline the detector ROIs recorded in each run's configuration.
+        Outline the detector ROIs recorded in each run's configuration, except
+        on images shown with another Transform type than the run recorded.
+    transform
+        areaDetector Transform type (``"None"``, ``"Rot90"``, ...,
+        ``"Rot270Mirror"``) to show every image with; ``"None"`` shows images as
+        the files store them. By default each run is shown with the Transform
+        type it recorded for the plugin before the detector's ROI plugins, the
+        orientation of its ROI coordinates, or as stored when it recorded none,
+        e.g. AXIS runs saved before the type was recorded.
     stream
         Event stream to read.
 
@@ -224,6 +253,10 @@ def show_images(
     if diff and len(resolved) != 2:
         raise ValueError(f"diff=True compares two runs, not {len(resolved)}")
     key = _image_key(resolved[0], stream, det)
+    if transform is not None and transform not in _TRANSFORMS:
+        raise ValueError(
+            f"transform must be one of {', '.join(_TRANSFORMS)}, not {transform!r}"
+        )
 
     background = None
     background_label = ""
@@ -232,12 +265,19 @@ def show_images(
         background, _ = _mean_image(dark, stream, key, None)
         background_label = f" - {_short(dark)}"
 
-    panels: list[tuple[BlueskyRun, np.ndarray, str]] = []
+    panels: list[_Panel] = []
     for run in resolved:
-        image, how = _mean_image(run, stream, key, frame)
+        saved, how = _mean_image(run, stream, key, frame)
         if background is not None:
-            image = image - background
-        panels.append((run, image, f"{_label(run)}\n{how}{background_label}"))
+            saved = saved - background
+        recorded = _recorded_transform(run, stream, key)
+        shown = transform or recorded or "None"
+        title = f"{_label(run)}\n{how}{background_label}"
+        if shown != "None":
+            title += f", {shown}"
+        # Without a record, the image is taken to be in its ROI orientation.
+        in_roi_frame = recorded is None or shown == recorded
+        panels.append(_Panel(run, saved, shown, in_roi_frame, title))
 
     n_axes = len(panels) + diff
     ncols = min(n_axes, 3)
@@ -246,27 +286,50 @@ def show_images(
     fig, axes = _subplots(IMAGES_FIGURE, (nrows, ncols), size, sharey=True)
     axes = axes.ravel()
 
-    color_norm = _shared_norm([image for _, image, _ in panels], log)
-    for ax, (run, image, title) in zip(axes, panels, strict=False):
+    images = [_TRANSFORMS[panel.transform](panel.saved) for panel in panels]
+    color_norm = _shared_norm(images, log)
+    for ax, panel, image in zip(axes, panels, images, strict=False):
         ax.imshow(image, norm=color_norm)
-        ax.set_title(title, fontsize="small")
-        if rois:
-            _draw_rois(ax, run[stream].metadata, key)
+        ax.set_title(panel.title, fontsize="small")
+        if rois and panel.in_roi_frame:
+            _draw_rois(ax, panel.run[stream].metadata, key)
     shared_scale = ScalarMappable(norm=color_norm)
     fig.colorbar(shared_scale, ax=axes[: len(panels)].tolist(), shrink=0.8)
 
     if diff:
-        (first, first_image, _), (second, second_image, _) = panels
-        difference = first_image - second_image
+        first, second = panels
+        # Pixels of the saved images match even when the runs' transforms differ.
+        difference = _TRANSFORMS[first.transform](first.saved - second.saved)
         limit = float(np.nanpercentile(np.abs(difference), _CLIM_PERCENTILES[1]))
         limit = limit or 1.0
         ax = axes[len(panels)]
         artist = ax.imshow(difference, cmap="RdBu_r", vmin=-limit, vmax=limit)
-        ax.set_title(f"{_short(first)} - {_short(second)}", fontsize="small")
+        ax.set_title(f"{_short(first.run)} - {_short(second.run)}", fontsize="small")
         fig.colorbar(artist, ax=ax, shrink=0.8)
     for ax in axes[n_axes:]:
         ax.set_visible(False)
     return fig
+
+
+class _Panel(NamedTuple):
+    run: BlueskyRun
+    saved: np.ndarray  # mean image as the files store it
+    transform: str  # Transform type the image is shown with
+    in_roi_frame: bool  # shown in the orientation of its ROI coordinates
+    title: str
+
+
+def _recorded_transform(run: BlueskyRun, stream: str, key: str) -> str | None:
+    """Return the Transform type ``run`` recorded before its ROIs, if any."""
+    metadata = run[stream].metadata
+    device = metadata["data_keys"][key].get("object_name")
+    config = metadata.get("configuration", {}).get(device, {}).get("data", {})
+    recorded = config.get(f"{device}_{_ROI_TRANSFORM_FIELD}")
+    if recorded is not None and recorded not in _TRANSFORMS:
+        raise ValueError(
+            f"{_label(run)} recorded unknown {device} Transform type {recorded!r}"
+        )
+    return recorded
 
 
 def what_changed(

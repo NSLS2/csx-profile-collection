@@ -18,6 +18,8 @@ from csx_tools.quicklook import plot_scans, recent_runs, show_images, what_chang
 matplotlib.use("Agg")
 
 IMAGE_SHAPE = (4, 5)
+# A frame as the AXIS HDF5 plugin saves it, with distinct pixels to show orientation.
+SAVED_FRAME = np.arange(20).reshape(IMAGE_SHAPE)
 
 
 def _number(source="sim"):
@@ -36,12 +38,14 @@ def write_run(
     energy=700.0,
     temperature=20.0,
     sample="A",
+    roi_transform=None,
     finished=True,
 ):
     """Write a CSX-like run: scalers, AXIS images with ROIs, and a baseline.
 
     ``images`` has shape (points, frames per point, y, x); ``theta`` makes the
-    run a one-dimensional scan, otherwise it is a count.
+    run a one-dimensional scan, otherwise it is a count. ``roi_transform`` is the
+    recorded Transform type before the ROIs; ``None`` records none.
     """
     points = images.shape[0]
     sclr_ch2 = np.arange(1.0, points + 1) if sclr_ch2 is None else sclr_ch2
@@ -71,6 +75,8 @@ def write_run(
         "axis_standard_roi2_size_y": 0,
         "axis_standard_roi2_name_": "",
     }
+    if roi_transform is not None:
+        config["axis_standard_trans1_transform_type"] = roi_transform
     scalars = ["sclr_ch2", "sclr_ch3", "axis_standard_stats1_total"]
     data_keys = {key: _number() for key in scalars}
     data_keys["axis_standard_image"] = {
@@ -195,6 +201,9 @@ def catalog(tmp_path_factory):
             )
             catalog = root["migration"]
             writer = TiledWriter(catalog)
+            readout = np.broadcast_to(SAVED_FRAME, (2, 1, *IMAGE_SHAPE))
+            write_run(writer, assets, scan_id=99, images=readout, roi_transform="Rot90")
+            write_run(writer, assets, scan_id=100, images=readout)
             theta = [10.0, 11.0, 12.0]
             point = np.arange(3).reshape(3, 1, 1, 1)
             # Two frames per point: point i holds 10 * i and 10 * i + 1.
@@ -290,6 +299,32 @@ def test_show_images_frame_selects_one_point(catalog):
     (panel,) = (ax for ax in fig.axes if ax.images)
     np.testing.assert_allclose(pixels(panel), 20.5)
     assert not panel.patches
+
+
+def test_show_images_orients_runs_by_their_record_else_as_stored(catalog):
+    fig = show_images(catalog, 99, 100, diff=True)
+
+    recorded, unrecorded, difference = (ax for ax in fig.axes if ax.images)
+    # Rot90 is clockwise: the saved left column becomes the top row.
+    assert pixels(recorded)[0].tolist() == [15, 10, 5, 0]
+    assert "Rot90" in recorded.get_title()
+    assert any(isinstance(p, Rectangle) for p in recorded.patches)
+    np.testing.assert_array_equal(pixels(unrecorded), SAVED_FRAME)
+    assert "Rot" not in unrecorded.get_title()
+    # Both runs saved the same frame, however the IOC oriented it.
+    np.testing.assert_array_equal(pixels(difference), 0)
+
+
+def test_show_images_transform_applies_to_every_run(catalog):
+    fig = show_images(catalog, 99, 100, transform="Rot90Mirror")
+
+    recorded, unrecorded = (ax for ax in fig.axes if ax.images)
+    np.testing.assert_array_equal(pixels(recorded), SAVED_FRAME.T)
+    np.testing.assert_array_equal(pixels(unrecorded), SAVED_FRAME.T)
+    # Run 99's ROI coordinates refer to its recorded Rot90 frame, not this one.
+    assert not recorded.patches
+    # Without a record, the given transform is taken as the ROI orientation.
+    assert any(isinstance(p, Rectangle) for p in unrecorded.patches)
 
 
 def test_what_changed_reports_differences_beyond_tolerance(catalog):

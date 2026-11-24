@@ -526,6 +526,19 @@ class PvaPluginWithPluginAttributes(PvaPlugin):
     enable = Cpt(EpicsSignalWithRBV, "EnableCallbacks", string=True, kind="config")
 
 
+class TransformPluginWithType(TransformPlugin):
+    """Transform plugin that records its transform type as configuration.
+
+    ophyd's TransformPlugin lacks ADCore's single ``Type`` record (None, Rot90,
+    ..., Rot270Mirror), which sets the orientation every downstream plugin,
+    such as the ROIs, sees. Only ``Type`` is configuration: the legacy
+    ``Type1``-``Type4`` PVs do not exist on current IOCs.
+    """
+    _default_configuration_attrs = ("transform_type",)
+    transform_type = Cpt(EpicsSignalRO, "Type", string=True, kind="config")
+
+
+
 def set_plugin_graph(graph: dict[PluginBase, Union[CamBase, PluginBase]]) -> None:
     for target, source in graph.items():
         target.nd_array_port.set(source.port_name.get()).wait(0.5)
@@ -541,6 +554,9 @@ class AxisCamBase(AreaDetector):
     The IOC is currently hosted on a Windows machine so the
     `write_path_template` must be specified as a Windows path.
     """
+    # Record how the IOC orients frames for the ROIs (Trans1) and the display (Trans2);
+    # the HDF5 plugin saves frames untransformed.
+    _default_configuration_attrs = AreaDetector._default_configuration_attrs + ("trans1", "trans2")
     cam = Cpt(AxisDetectorCam, "cam1:")
     stats1 = Cpt(StatsPlugin, 'Stats1:')
     stats2 = Cpt(StatsPlugin, 'Stats2:')
@@ -553,8 +569,8 @@ class AxisCamBase(AreaDetector):
     roi4 = Cpt(ROIPlugin, 'ROI4:')
     proc1 = Cpt(ProcessPlugin, 'Proc1:')
     proc2 = Cpt(ProcessPlugin, 'Proc2:')
-    trans1 = Cpt(TransformPlugin, 'Trans1:')
-    trans2 = Cpt(TransformPlugin, 'Trans2:')
+    trans1 = Cpt(TransformPluginWithType, 'Trans1:')
+    trans2 = Cpt(TransformPluginWithType, 'Trans2:')
     over1 = Cpt(OverlayPlugin, 'Over1:')
     hdf5 = Cpt(HDF5PluginWithFileStorePlain,
               suffix='HDF1:',
